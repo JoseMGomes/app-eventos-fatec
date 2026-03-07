@@ -7,4 +7,5 @@ export const COLORS = {
   cinzaCard: "#FFFFFF",
   textoPrincipal: "#333333",
   textoSecundario: "#666666",
+  placeholderText: "#A0A0A0"
 };
