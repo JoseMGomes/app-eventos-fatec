@@ -72,7 +72,7 @@ const AdminDashboardScreen = () => {
           <AdminOption
             icon="calendar-plus"
             title="Criar Evento"
-            onPress={() => console.log("Criar Evento - Futuro")}
+            onPress={() => navigation.navigate("CreateEvent")}
           />
           <AdminOption
             icon="qrcode-scan"
