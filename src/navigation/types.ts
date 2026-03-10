@@ -21,6 +21,7 @@ export type RootStackParamList = {
   AttendanceList: { evento: Evento };
   CreateEvent: undefined;
   ManageUsers: undefined;
+  ManageCategories: undefined;
 };
 
 export type AppNavigationProp = StackNavigationProp<RootStackParamList>;

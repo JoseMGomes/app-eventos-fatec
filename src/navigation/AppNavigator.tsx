@@ -8,6 +8,7 @@ import AttendanceListScreen from "../screens/AttendanceList/AttendanceListScreen
 import TabNavigator from "./TabNavigator";
 import CreateEventScreen from "../screens/CreateEvent/CreateEventScreen";
 import ManageUsersScreen from "../screens/ManageUsers/ManageUsersScreen";
+import ManageCategoriesScreen from "../screens/ManageCategories/ManageCategoriesScreen";
 
 const Stack = createStackNavigator();
 
@@ -51,6 +52,16 @@ const AppNavigator = () => {
           options={{
             headerShown: true,
             title: "Gerenciar Usuários",
+            headerBackTitleVisible: false,
+            headerTintColor: "#A90000",
+          }}
+        />
+        <Stack.Screen
+          name="ManageCategories"
+          component={ManageCategoriesScreen}
+          options={{
+            headerShown: true,
+            title: "Gerenciar Categorias",
             headerBackTitleVisible: false,
             headerTintColor: "#A90000",
           }}

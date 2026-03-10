@@ -85,9 +85,9 @@ const AdminDashboardScreen = () => {
             onPress={() => navigation.navigate("ManageUsers" as any)}
           />
           <AdminOption
-            icon="file-certificate"
-            title="Certificados"
-            onPress={() => console.log("Certificados - Futuro")}
+            icon="tag-multiple"
+            title="Categorias"
+            onPress={() => navigation.navigate("ManageCategories" as any)}
           />
           <AdminOption
             icon="chart-bar"
