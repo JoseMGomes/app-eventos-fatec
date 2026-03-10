@@ -20,6 +20,7 @@ export type RootStackParamList = {
   Scanner: { eventId: string; eventName: string };
   AttendanceList: { evento: Evento };
   CreateEvent: undefined;
+  ManageUsers: undefined;
 };
 
 export type AppNavigationProp = StackNavigationProp<RootStackParamList>;

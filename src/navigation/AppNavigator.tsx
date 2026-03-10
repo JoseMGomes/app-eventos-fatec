@@ -7,6 +7,7 @@ import EventDetailScreen from "../screens/EventDetail/EventDetailScreen";
 import AttendanceListScreen from "../screens/AttendanceList/AttendanceListScreen";
 import TabNavigator from "./TabNavigator";
 import CreateEventScreen from "../screens/CreateEvent/CreateEventScreen";
+import ManageUsersScreen from "../screens/ManageUsers/ManageUsersScreen";
 
 const Stack = createStackNavigator();
 
@@ -43,6 +44,16 @@ const AppNavigator = () => {
           name="CreateEvent"
           component={CreateEventScreen}
           options={{ title: "Criar Novo Evento", headerShown: true }}
+        />
+        <Stack.Screen
+          name="ManageUsers"
+          component={ManageUsersScreen}
+          options={{
+            headerShown: true,
+            title: "Gerenciar Usuários",
+            headerBackTitleVisible: false,
+            headerTintColor: "#A90000",
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -1,0 +1,188 @@
+import { StyleSheet } from "react-native";
+import { COLORS } from "../../styles/colors";
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.cinzaFundo,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: COLORS.branco,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: COLORS.textoPrincipal,
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.vermelhoPrincipal,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  addButtonText: {
+    color: COLORS.branco,
+    fontWeight: "bold",
+    marginLeft: 5,
+  },
+  listContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  userCard: {
+    backgroundColor: COLORS.branco,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  userInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.textoPrincipal,
+    marginBottom: 2,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: COLORS.textoSecundario,
+    marginBottom: 10,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 5,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+    paddingTop: 10,
+  },
+  roleBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  roleText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: COLORS.branco,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 15, 
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: COLORS.branco,
+    width: "100%",
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: COLORS.textoPrincipal,
+    marginLeft: 10,
+  },
+  inputGroup: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.textoPrincipal,
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: COLORS.vermelhoPrincipal,
+    borderRadius: 8,
+    backgroundColor: COLORS.branco,
+  },
+  input: {
+    flex: 1,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: COLORS.textoPrincipal,
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+  rolesContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 20,
+  },
+  roleChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    backgroundColor: "#F9F9F9",
+  },
+  roleChipActive: {
+    backgroundColor: COLORS.vermelhoPrincipal,
+    borderColor: COLORS.vermelhoPrincipal,
+  },
+  roleChipText: {
+    fontSize: 14,
+    color: COLORS.textoSecundario,
+  },
+  roleChipTextActive: {
+    color: COLORS.branco,
+    fontWeight: "bold",
+  },
+  submitButton: {
+    backgroundColor: COLORS.vermelhoPrincipal,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: COLORS.branco,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+});

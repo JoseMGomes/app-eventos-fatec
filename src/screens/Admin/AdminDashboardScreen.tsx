@@ -82,7 +82,7 @@ const AdminDashboardScreen = () => {
           <AdminOption
             icon="account-group"
             title="Usuários"
-            onPress={() => console.log("Gerenciar Usuários - Futuro")}
+            onPress={() => navigation.navigate("ManageUsers" as any)}
           />
           <AdminOption
             icon="file-certificate"
