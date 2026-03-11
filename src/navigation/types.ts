@@ -22,6 +22,7 @@ export type RootStackParamList = {
   CreateEvent: undefined;
   ManageUsers: undefined;
   ManageCategories: undefined;
+  ManageCourses: undefined;
 };
 
 export type AppNavigationProp = StackNavigationProp<RootStackParamList>;

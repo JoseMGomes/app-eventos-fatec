@@ -10,98 +10,98 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../styles/colors";
-import { styles } from "./ManageCategoriesScreen.styles";
+import { styles } from "./ManageCoursesScreen.styles";
 
-const MOCK_CATEGORIAS = [
+const MOCK_CURSOS = [
   {
     id: "1",
-    nome: "Competição acadêmica",
-    criadoEm: "30/09/2025 - 16:26:21",
-    editadoEm: "30/09/2025 - 16:26:21",
+    nome: "Análise e Desenvolvimento de Sistemas ( ADS )",
+    criadoEm: "04/11/2025 - 18:29:44",
+    editadoEm: "04/11/2025 - 18:29:44",
   },
   {
     id: "2",
-    nome: "Exposição",
-    criadoEm: "30/09/2025 - 16:26:16",
-    editadoEm: "30/09/2025 - 16:26:28",
+    nome: "Análise e Desenvolvimento de Sistemas ( ADS-AMS )",
+    criadoEm: "30/09/2025 - 16:27:32",
+    editadoEm: "08/11/2025 - 11:41:58",
   },
   {
     id: "3",
-    nome: "Conferência",
-    criadoEm: "30/09/2025 - 16:26:12",
-    editadoEm: "30/09/2025 - 16:26:33",
+    nome: "Gestão da Tecnologia da Informação",
+    criadoEm: "30/09/2025 - 16:27:42",
+    editadoEm: "30/09/2025 - 16:28:03",
   },
   {
     id: "4",
-    nome: "Workshop",
-    criadoEm: "30/09/2025 - 16:26:05",
-    editadoEm: "30/09/2025 - 16:26:05",
+    nome: "Gestão de Eventos",
+    criadoEm: "30/09/2025 - 16:27:51",
+    editadoEm: "30/09/2025 - 16:27:51",
   },
   {
     id: "5",
-    nome: "Seminário",
-    criadoEm: "30/09/2025 - 16:26:01",
-    editadoEm: "30/09/2025 - 16:26:01",
+    nome: "Gestão Empresarial",
+    criadoEm: "30/09/2025 - 16:27:37",
+    editadoEm: "30/09/2025 - 16:27:56",
+  },
+  {
+    id: "6",
+    nome: "Mecatrônica Industrial",
+    criadoEm: "30/09/2025 - 16:27:46",
+    editadoEm: "30/09/2025 - 16:28:07",
+  },
+  {
+    id: "7",
+    nome: "Processos Gerenciais - AMS",
+    criadoEm: "08/11/2025 - 11:41:37",
+    editadoEm: "08/11/2025 - 11:41:37",
   },
 ];
 
-const ManageCategoriesScreen = () => {
+const ManageCoursesScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
-  const [nomeCategoria, setNomeCategoria] = useState("");
-  // Estado para saber se estamos editando (guarda o ID) ou criando (fica null)
-  const [categoriaEmEdicao, setCategoriaEmEdicao] = useState<string | null>(
-    null,
-  );
+  const [nomeCurso, setNomeCurso] = useState("");
+  const [cursoEmEdicao, setCursoEmEdicao] = useState<string | null>(null);
 
-  // Função para abrir o modal limpo para CRIAR
   const abrirModalCriacao = () => {
-    setCategoriaEmEdicao(null);
-    setNomeCategoria("");
+    setCursoEmEdicao(null);
+    setNomeCurso("");
     setModalVisible(true);
   };
 
-  // Função para abrir o modal preenchido para EDITAR
-  const abrirModalEdicao = (categoria: any) => {
-    setCategoriaEmEdicao(categoria.id);
-    setNomeCategoria(categoria.nome);
+  const abrirModalEdicao = (curso: any) => {
+    setCursoEmEdicao(curso.id);
+    setNomeCurso(curso.nome);
     setModalVisible(true);
   };
 
-  // Função para fechar e limpar tudo
   const fecharModal = () => {
     setModalVisible(false);
-    setNomeCategoria("");
-    setCategoriaEmEdicao(null);
+    setNomeCurso("");
+    setCursoEmEdicao(null);
   };
 
-  // Função unificada de salvar (Serve para criar e editar)
-  const handleSalvarCategoria = () => {
-    if (!nomeCategoria.trim()) {
-      Alert.alert("Atenção", "Por favor, insira o nome da categoria.");
+  const handleSalvarCurso = () => {
+    if (!nomeCurso.trim()) {
+      Alert.alert("Atenção", "Por favor, insira o nome do curso.");
       return;
     }
 
-    if (categoriaEmEdicao) {
+    if (cursoEmEdicao) {
       Alert.alert(
         "Sucesso",
-        `Categoria atualizada para "${nomeCategoria}" com sucesso!`,
+        `Curso atualizado para "${nomeCurso}" com sucesso!`,
       );
-      // Aqui no futuro você fará o PUT para a sua API
     } else {
-      Alert.alert(
-        "Sucesso",
-        `Categoria "${nomeCategoria}" criada com sucesso!`,
-      );
-      // Aqui no futuro você fará o POST para a sua API
+      Alert.alert("Sucesso", `Curso "${nomeCurso}" criado com sucesso!`);
     }
 
     fecharModal();
   };
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.categoryCard}>
-      <View style={styles.categoryInfo}>
-        <Text style={styles.categoryName}>{item.nome}</Text>
+    <View style={styles.courseCard}>
+      <View style={styles.courseInfo}>
+        <Text style={styles.courseName}>{item.nome}</Text>
 
         <View style={styles.dateInfo}>
           <MaterialCommunityIcons
@@ -123,7 +123,6 @@ const ManageCategoriesScreen = () => {
       </View>
 
       <View style={styles.actionsColumn}>
-        {/* Agora o botão de editar chama a função passando a categoria atual */}
         <TouchableOpacity onPress={() => abrirModalEdicao(item)}>
           <MaterialCommunityIcons
             name="pencil"
@@ -133,7 +132,7 @@ const ManageCategoriesScreen = () => {
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() =>
-            Alert.alert("Excluir", `Deseja remover a categoria ${item.nome}?`)
+            Alert.alert("Excluir", `Deseja remover o curso ${item.nome}?`)
           }
         >
           <MaterialCommunityIcons
@@ -146,25 +145,20 @@ const ManageCategoriesScreen = () => {
     </View>
   );
 
-  // Variáveis para mudar a cara do modal dinamicamente
-  const isEditando = categoriaEmEdicao !== null;
+  const isEditando = cursoEmEdicao !== null;
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Categorias ({MOCK_CATEGORIAS.length})</Text>
+        <Text style={styles.title}>Cursos ({MOCK_CURSOS.length})</Text>
         <TouchableOpacity style={styles.addButton} onPress={abrirModalCriacao}>
-          <MaterialCommunityIcons
-            name="tag-plus"
-            size={20}
-            color={COLORS.branco}
-          />
-          <Text style={styles.addButtonText}>Criar nova</Text>
+          <MaterialCommunityIcons name="plus" size={20} color={COLORS.branco} />
+          <Text style={styles.addButtonText}>Criar novo</Text>
         </TouchableOpacity>
       </View>
 
       <FlatList
-        data={MOCK_CATEGORIAS}
+        data={MOCK_CURSOS}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContainer}
@@ -176,14 +170,13 @@ const ManageCategoriesScreen = () => {
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleContainer}>
-                {/* Muda o ícone dependendo se é criação ou edição */}
                 <MaterialCommunityIcons
-                  name={isEditando ? "tag-edit" : "tag-plus"}
+                  name={isEditando ? "pencil" : "school"}
                   size={28}
                   color={COLORS.textoPrincipal}
                 />
                 <Text style={styles.modalTitle}>
-                  {isEditando ? "Editar categoria" : "Criar nova categoria"}
+                  {isEditando ? "Editar curso" : "Criar novo curso"}
                 </Text>
               </View>
               <TouchableOpacity onPress={fecharModal}>
@@ -196,19 +189,19 @@ const ManageCategoriesScreen = () => {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nome da Categoria</Text>
+              <Text style={styles.label}>Nome do Curso</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Ex: Minicurso"
-                value={nomeCategoria}
-                onChangeText={setNomeCategoria}
+                placeholder="Ex: Gestão Financeira"
+                value={nomeCurso}
+                onChangeText={setNomeCurso}
                 autoFocus
               />
             </View>
 
             <TouchableOpacity
               style={styles.submitButton}
-              onPress={handleSalvarCategoria}
+              onPress={handleSalvarCurso}
             >
               <Text style={styles.submitButtonText}>
                 {isEditando ? "Salvar Alterações" : "Criar"}
@@ -221,4 +214,4 @@ const ManageCategoriesScreen = () => {
   );
 };
 
-export default ManageCategoriesScreen;
+export default ManageCoursesScreen;

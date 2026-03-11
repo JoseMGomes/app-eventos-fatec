@@ -90,9 +90,9 @@ const AdminDashboardScreen = () => {
             onPress={() => navigation.navigate("ManageCategories" as any)}
           />
           <AdminOption
-            icon="chart-bar"
-            title="Relatórios"
-            onPress={() => console.log("Relatórios - Futuro")}
+            icon="school"
+            title="Cursos"
+            onPress={() => navigation.navigate("ManageCourses" as any)}
           />
           <AdminOption
             icon="cog"

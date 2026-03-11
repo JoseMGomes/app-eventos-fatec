@@ -37,7 +37,7 @@ export const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-  categoryCard: {
+  courseCard: {
     backgroundColor: COLORS.branco,
     padding: 16,
     borderRadius: 12,
@@ -51,11 +51,11 @@ export const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  categoryInfo: {
+  courseInfo: {
     flex: 1,
   },
-  categoryName: {
-    fontSize: 18,
+  courseName: {
+    fontSize: 16,
     fontWeight: "bold",
     color: COLORS.textoPrincipal,
     marginBottom: 8,
