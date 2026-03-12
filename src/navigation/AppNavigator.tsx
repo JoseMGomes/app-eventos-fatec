@@ -10,6 +10,7 @@ import CreateEventScreen from "../screens/CreateEvent/CreateEventScreen";
 import ManageUsersScreen from "../screens/ManageUsers/ManageUsersScreen";
 import ManageCategoriesScreen from "../screens/ManageCategories/ManageCategoriesScreen";
 import ManageCoursesScreen from "../screens/ManageCourses/ManageCoursesScreen";
+import EditProfileScreen from "../screens/EditProfile/EditProfileScreen";
 
 const Stack = createStackNavigator();
 
@@ -71,6 +72,14 @@ const AppNavigator = () => {
             title: "Gerenciar Cursos",
           }}
         />
+        <Stack.Screen 
+        name="EditProfile" 
+        component={EditProfileScreen} 
+        options={{ 
+          headerShown: true, 
+          title: 'Gerenciar perfil', 
+        }} 
+      />
       </Stack.Navigator>
     </NavigationContainer>
   );

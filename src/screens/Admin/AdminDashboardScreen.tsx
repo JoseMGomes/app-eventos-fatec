@@ -95,9 +95,9 @@ const AdminDashboardScreen = () => {
             onPress={() => navigation.navigate("ManageCourses" as any)}
           />
           <AdminOption
-            icon="cog"
-            title="Configurações"
-            onPress={() => console.log("Configurações - Futuro")}
+            icon="account-edit"
+            title="Editar Perfil"
+            onPress={() => navigation.navigate("EditProfile" as any)}
           />
         </View>
       </ScrollView>
