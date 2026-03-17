@@ -1,4 +1,4 @@
-import { StyleSheet, Platform } from "react-native";
+import { StyleSheet } from "react-native";
 import { COLORS } from "../../styles/colors";
 
 export const styles = StyleSheet.create({
@@ -8,18 +8,17 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingTop: Platform.OS === "ios" ? 50 : 40,
-    paddingBottom: 120,
+    paddingBottom: 40,
   },
   header: {
-    marginBottom: 25,
+    marginBottom: 20,
   },
-  headerTitle: {
-    fontSize: 28,
+  welcomeText: {
+    fontSize: 24,
     fontWeight: "bold",
     color: COLORS.textoPrincipal,
   },
-  subTitle: {
+  subtitleText: {
     fontSize: 16,
     color: COLORS.textoSecundario,
     marginTop: 4,
@@ -31,28 +30,26 @@ export const styles = StyleSheet.create({
   },
   statCard: {
     backgroundColor: COLORS.branco,
-    width: "31%",
-    paddingVertical: 18,
-    paddingHorizontal: 10,
+    padding: 15,
     borderRadius: 16,
     alignItems: "center",
+    width: "31%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 5,
+    elevation: 2,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
-    color: COLORS.vermelhoPrincipal,
-    marginBottom: 4,
+    color: COLORS.textoPrincipal,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textoSecundario,
     textAlign: "center",
-    fontWeight: "500",
+    marginTop: 2,
   },
   sectionTitle: {
     fontSize: 18,
@@ -60,34 +57,36 @@ export const styles = StyleSheet.create({
     color: COLORS.textoPrincipal,
     marginBottom: 15,
   },
-  grid: {
+  gridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
   },
   optionCard: {
-    width: "48%",
     backgroundColor: COLORS.branco,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
+    width: "48%",
+    paddingVertical: 25,
+    paddingHorizontal: 15,
     borderRadius: 16,
     alignItems: "center",
     marginBottom: 15,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowRadius: 5,
+    elevation: 2,
   },
   iconContainer: {
-    backgroundColor: "rgba(169, 0, 0, 0.1)",
-    padding: 16,
-    borderRadius: 50,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 12,
   },
-  optionText: {
+  optionTitle: {
     fontSize: 15,
-    fontWeight: "bold",
+    fontWeight: "600",
     color: COLORS.textoPrincipal,
     textAlign: "center",
   },

@@ -84,6 +84,7 @@ const Tab = createBottomTabNavigator();
 const TabNavigator = () => {
   return (
     <Tab.Navigator
+    initialRouteName="Gestão"
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
