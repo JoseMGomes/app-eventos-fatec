@@ -84,7 +84,7 @@ const ProfileScreen = () => {
           <MenuItem
             icon="account-edit-outline"
             title="Editar Perfil"
-            onPress={() => console.log("Editar")}
+            onPress={() => navigation.navigate("EditProfile" as any)}
           />
           <MenuItem
             icon="shield-lock-outline"
@@ -92,9 +92,9 @@ const ProfileScreen = () => {
             onPress={() => console.log("Segurança")}
           />
           <MenuItem
-            icon="bell-outline"
-            title="Notificações"
-            onPress={() => console.log("Notificações")}
+            icon="cog-outline"
+            title="Configurações"
+            onPress={() => navigation.navigate("Settings" as any)}
           />
 
           <TouchableOpacity

@@ -24,6 +24,7 @@ export type RootStackParamList = {
   ManageCategories: undefined;
   ManageCourses: undefined;
   EditProfile: undefined;
+  Settings: undefined;
 };
 
 export type AppNavigationProp = StackNavigationProp<RootStackParamList>;

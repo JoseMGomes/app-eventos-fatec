@@ -11,6 +11,7 @@ import ManageUsersScreen from "../screens/ManageUsers/ManageUsersScreen";
 import ManageCategoriesScreen from "../screens/ManageCategories/ManageCategoriesScreen";
 import ManageCoursesScreen from "../screens/ManageCourses/ManageCoursesScreen";
 import EditProfileScreen from "../screens/EditProfile/EditProfileScreen";
+import SettingsScreen from "../screens/Settings/SettingsScreen";
 
 const Stack = createStackNavigator();
 
@@ -78,6 +79,14 @@ const AppNavigator = () => {
         options={{ 
           headerShown: true, 
           title: 'Gerenciar perfil', 
+        }} 
+      />
+      <Stack.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ 
+          headerShown: true, 
+          title: 'Configurações', 
         }} 
       />
       </Stack.Navigator>
