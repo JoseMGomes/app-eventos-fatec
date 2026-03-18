@@ -1,171 +1,155 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useRoute } from "@react-navigation/native";
+import React, { useEffect } from "react";
 import {
-  View,
+  Alert,
+  ScrollView,
   Text,
-  Button,
-  Animated,
-  Easing,
-  StatusBar,
-  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
-import { useRoute, RouteProp } from "@react-navigation/native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { RootStackParamList } from "../../navigation/types";
 import { styles } from "./Scanner.style";
-import FeedbackModal from "../../components/FeedbackModal";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../styles/colors";
 
-const MOCK_ALUNOS_INSCRITOS: { [key: string]: string } = {
-  RA0123: "Ana Carolina Pereira",
-  RA4567: "Bruno Vasconcelos",
-  RA8910: "Carlos Eduardo Lima",
-};
-
-type ScannerScreenRouteProp = RouteProp<RootStackParamList, "Scanner">;
-
 const ScannerScreen = () => {
-  const route = useRoute<ScannerScreenRouteProp>();
-  const { eventName, eventId } = route.params;
+  const route = useRoute<any>();
+  const eventName = route.params?.eventName || "Palestra de Tecnologia";
 
-  const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalInfo, setModalInfo] = useState({
-    type: "success" as "success" | "error",
-    title: "",
-    message: "",
-  });
-
-  const laserAnimation = useRef(new Animated.Value(0)).current;
+  const [isCheckedActive, setIsCheckedActive] = React.useState(false);
+  const [secretWord, setSecretWord] = React.useState("");
+  const [timeLeft, setTimeLeft] = React.useState(900);
 
   useEffect(() => {
-    requestPermission();
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(laserAnimation, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(laserAnimation, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
-  }, []);
+    let timer: NodeJS.Timeout;
+    if (isCheckedActive && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0 && isCheckedActive) {
+      handleEncerrarCheckIn();
+      Alert.alert(
+        "Tempo esgotado",
+        "O tempo para realizar o check-in expirou.",
+      );
+    }
+    return () => clearInterval(timer);
+  }, [isCheckedActive, timeLeft]);
 
-  const handleBarCodeScanned = ({ data }: { data: string }) => {
-    setScanned(true);
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
 
-    const nomeAluno = MOCK_ALUNOS_INSCRITOS[data];
-
-    if (nomeAluno) {
-      setModalInfo({
-        type: "success",
-        title: "Presença Confirmada!",
-        message: `Check-in de ${nomeAluno}\n(${data})\nregistrado com sucesso.`,
-      });
-    } else {
-      setModalInfo({
-        type: "error",
-        title: "Aluno não Encontrado",
-        message: `O QR Code não corresponde a um aluno inscrito neste evento.`,
-      });
+  const handleIniciarCheckIn = () => {
+    if (secretWord.trim()) {
+      const randomWord = Math.random()
+        .toString(36)
+        .substring(2, 8)
+        .toUpperCase();
+      setSecretWord(randomWord);
     }
 
-    setModalVisible(true);
+    setIsCheckedActive(true);
+    setTimeLeft(900);
   };
 
-  const handleCloseModal = () => {
-    setModalVisible(false);
-    setTimeout(() => setScanned(false), 1500);
+  const handleEncerrarCheckIn = () => {
+    setIsCheckedActive(false);
+    setSecretWord("");
+    setTimeLeft(900);
   };
-
-  const laserStyle = {
-    transform: [
-      {
-        translateY: laserAnimation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, 275],
-        }),
-      },
-    ],
-  };
-
-  if (!permission) return <View />;
-
-  if (!permission.granted) {
-    return (
-      <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>
-          Precisamos da sua permissão para usar a câmera.
-        </Text>
-        <Button
-          title={"Conceder Permissão"}
-          onPress={requestPermission}
-          color={COLORS.vermelhoPrincipal}
-        />
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" translucent />
-
-      <CameraView
-        style={StyleSheet.absoluteFillObject}
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-      />
-
-      <View style={styles.overlay}>
-        <View style={styles.maskRow} />
-        <View style={styles.maskCenter}>
-          <View style={styles.maskRow} />
-          <View style={styles.scannerHole}>
-            <View style={[styles.corner, styles.topLeft]} />
-            <View style={[styles.corner, styles.topRight]} />
-            <View style={[styles.corner, styles.bottomLeft]} />
-            <View style={[styles.corner, styles.bottomRight]} />
-            <Animated.View style={[styles.laser, laserStyle]} />
-          </View>
-          <View style={styles.maskRow} />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.eventName}>{eventName}</Text>
+          <Text style={styles.subtitle}>Painel de check-in do Professor</Text>
         </View>
-        <View style={styles.maskRow} />
-      </View>
+        <View style={styles.card}>
+          {isCheckedActive ? (
+            <>
+              <View style={styles.qrPlaceholder}>
+                <MaterialCommunityIcons
+                  name="qrcode-scan"
+                  size={180}
+                  color={COLORS.textoPrincipal}
+                />
+              </View>
 
-      <View style={styles.uiContainer}>
-        <View style={styles.headerRow}>
-          <View style={styles.eventPill}>
-            <Text style={styles.headerText} numberOfLines={1}>
-              {eventName}
-            </Text>
-          </View>
+              <View style={styles.wordContainer}>
+                <Text style={styles.wordLabel}>Palavra Secreta:</Text>
+                <Text style={styles.wordText}>{secretWord.toUpperCase()}</Text>
+              </View>
+
+              <View style={styles.timerContainer}>
+                <MaterialCommunityIcons
+                  name="timer-outline"
+                  size={24}
+                  color="#e67e22"
+                />
+                <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  { backgroundColor: COLORS.textoPrincipal },
+                ]}
+                onPress={handleEncerrarCheckIn}
+              >
+                <MaterialCommunityIcons
+                  name="stop-circle-outline"
+                  size={20}
+                  color={COLORS.branco}
+                />
+                <Text style={styles.buttonText}>Encerrar Check-in</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <MaterialCommunityIcons
+                name="shield-key-outline"
+                size={120}
+                color={COLORS.vermelhoPrincipal}
+                style={{ marginBottom: 20 }}
+              />
+              <Text style={styles.helperText}>
+                Defina uma palavra secreta para os alunos digitarem no
+                aplicativo, ou deixe em branco para gerar um palavra aleatória.
+                O código ficará válido por 15 minutos.
+              </Text>
+
+              <TextInput
+                style={styles.input}
+                placeholder="EX: FATEC2026"
+                value={secretWord}
+                onChangeText={setSecretWord}
+                maxLength={15}
+              />
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleIniciarCheckIn}
+              >
+                <MaterialCommunityIcons
+                  name="play-circle-outline"
+                  size={20}
+                  color={COLORS.branco}
+                />
+                <Text style={styles.buttonText}>Iniciar Check-in (15 min)</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
-
-        <View style={styles.infoPill}>
-          <MaterialCommunityIcons
-            name="qrcode-scan"
-            size={20}
-            color={COLORS.branco}
-          />
-          <Text style={styles.infoText}>Aponte para o QR Code</Text>
-        </View>
-      </View>
-
-      <FeedbackModal
-        visible={modalVisible}
-        type={modalInfo.type}
-        title={modalInfo.title}
-        message={modalInfo.message}
-        onClose={handleCloseModal}
-      />
+      </ScrollView>
     </View>
   );
 };

@@ -1,116 +1,124 @@
-import { StyleSheet, Dimensions } from "react-native";
-import { COLORS } from "../../styles/colors";
-
-const { width } = Dimensions.get("window");
-const scannerSize = 280;
-const maskColor = "rgba(0, 0, 0, 0.75)";
+import { COLORS } from "./../../styles/colors";
+import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#000" 
-  },
-  permissionContainer: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
     backgroundColor: COLORS.cinzaFundo,
   },
-  permissionText: {
+  scrollContent: {
+    padding: 20,
+    alignItems: "center",
+  },
+  header: {
+    width: "100%",
+    marginBottom: 30,
+    alignItems: "center",
+  },
+  eventName: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: COLORS.textoPrincipal,
     textAlign: "center",
-    fontSize: 18,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: COLORS.textoSecundario,
+    textAlign: "center",
+  },
+  card: {
+    width: "100%",
+    backgroundColor: COLORS.branco,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  qrPlaceholder: {
+    width: 250,
+    height: 250,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#e0e0e0",
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
+  },
+  wordContainer: {
+    width: "100%",
+    backgroundColor: "#fce8e8",
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.vermelhoPrincipal,
+  },
+  wordLabel: {
+    fontSize: 12,
+    color: COLORS.vermelhoPrincipal,
+    textTransform: "uppercase",
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  wordText: {
+    fontSize: 32,
+    fontWeight: "700",
+    letterSpacing: 4,
     color: COLORS.textoPrincipal,
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
-  },
-  maskRow: {
-    flex: 1,
-    backgroundColor: maskColor,
-  },
-  maskCenter: {
+  timerContainer: {
     flexDirection: "row",
-    height: scannerSize,
+    alignItems: "center",
+    marginBottom: 30,
   },
-  scannerHole: {
-    width: scannerSize,
-    height: scannerSize,
-    backgroundColor: "transparent", 
+  timerText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#e67e22",
+    marginBottom: 8,
   },
-  corner: {
-    position: "absolute",
-    width: 40,
-    height: 40,
-    borderColor: COLORS.branco,
-    borderWidth: 5,
-    borderRadius: 8,
-  },
-  topLeft: {
-    top: 0, left: 0,
-    borderRightWidth: 0, borderBottomWidth: 0,
-  },
-  topRight: {
-    top: 0, right: 0,
-    borderLeftWidth: 0, borderBottomWidth: 0,
-  },
-  bottomLeft: {
-    bottom: 0, left: 0,
-    borderRightWidth: 0, borderTopWidth: 0,
-  },
-  bottomRight: {
-    bottom: 0, right: 0,
-    borderLeftWidth: 0, borderTopWidth: 0,
-  },
-  laser: {
+  button: {
     width: "100%",
-    height: 3,
     backgroundColor: COLORS.vermelhoPrincipal,
-    shadowColor: COLORS.vermelhoPrincipal,
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  uiContainer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 2,
-    justifyContent: "space-between",
-    paddingTop: 50,
-    paddingBottom: 40,
-  },
-  headerRow: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
     flexDirection: "row",
-    justifyContent: "center", 
-    paddingHorizontal: 20,
+    justifyContent: "center",
   },
-  eventPill: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    maxWidth: '80%', 
-  },
-  headerText: {
+  buttonText: {
     color: COLORS.branco,
     fontSize: 16,
     fontWeight: "bold",
-    textAlign: "center",
+    marginLeft: 8,
   },
-  infoPill: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    alignSelf: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  infoText: {
-    color: COLORS.branco,
+  input: {
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#d1d1d1",
+    borderRadius: 8,
+    padding: 15,
     fontSize: 16,
-    marginLeft: 10,
-    fontWeight: "500",
+    textAlign: "center",
+    marginBottom: 20,
+    textTransform: "uppercase",
+  },
+  helperText: {
+    fontSize: 14,
+    color: COLORS.textoSecundario,
+    textAlign: "center",
+    marginBottom: 20,
+    lineHeight: 20,
   },
 });
