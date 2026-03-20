@@ -1,69 +1,151 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Dimensions } from "react-native";
 import { COLORS } from "../../styles/colors";
+
+const { width } = Dimensions.get("window");
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.vermelhoPrincipal,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
+    backgroundColor: COLORS.cinzaFundo,
   },
-  titulo: {
-    fontSize: 48,
+  topBackground: {
+    height: "35%",
+    backgroundColor: COLORS.vermelhoPrincipal,
+    justifyContent: "center",
+    alignItems: "center",
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+  },
+  logoPlaceholder: {
+    alignItems: "center",
+    marginTop: 20,
+  },
+  title: {
+    fontSize: 28,
     fontWeight: "bold",
     color: COLORS.branco,
-    marginBottom: 5,
+    marginTop: 10,
+    letterSpacing: 1,
   },
-  subtitulo: {
-    fontSize: 18,
-    color: COLORS.branco,
-    marginBottom: 40,
+  subtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.8)",
+    marginTop: 5,
   },
-  input: {
+  formContainer: {
+    flex: 1,
+    alignItems: "center",
+    marginTop: -40,
+    paddingHorizontal: 20,
+  },
+  card: {
     width: "100%",
-    height: 50,
     backgroundColor: COLORS.branco,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    marginBottom: 15,
+    borderRadius: 20,
+    padding: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: COLORS.textoPrincipal,
+    marginBottom: 20,
+    textAlign: "center",
   },
   inputContainer: {
-    width: "100%",
-    height: 50,
-    backgroundColor: COLORS.branco,
-    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
-  },
-  inputSenha: {
-    flex: 1,
-    height: "100%",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 12,
     paddingHorizontal: 15,
+    marginBottom: 15,
+    height: 55,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  icon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
     fontSize: 16,
+    color: COLORS.textoPrincipal,
   },
-  iconeOlho: {
-    padding: 10,
+  forgotPasswordText: {
+    color: COLORS.vermelhoPrincipal,
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "right",
+    marginBottom: 25,
   },
-  botaoEntrar: {
-    width: "100%",
-    height: 50,
-    backgroundColor: COLORS.preto,
-    borderRadius: 8,
-    alignItems: "center",
+  mainButton: {
+    backgroundColor: COLORS.vermelhoPrincipal,
+    height: 55,
+    borderRadius: 12,
     justifyContent: "center",
-    marginTop: 10,
+    alignItems: "center",
+    shadowColor: COLORS.vermelhoPrincipal,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  textoBotaoEntrar: {
+  mainButtonText: {
     color: COLORS.branco,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
   },
-  textoConta: {
-    color: COLORS.branco,
+  secondaryButton: {
     marginTop: 20,
-    fontSize: 16,
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: COLORS.textoSecundario,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  codeHelperText: {
+    textAlign: "center",
+    color: COLORS.textoSecundario,
+    marginBottom: 20,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  otpContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginBottom: 25,
+    position: "relative",
+  },
+  otpBox: {
+    width: 45,
+    height: 55,
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  otpBoxActive: {
+    borderColor: COLORS.vermelhoPrincipal,
+    borderWidth: 2,
+    backgroundColor: COLORS.branco,
+  },
+  otpText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: COLORS.textoPrincipal,
+  },
+  hiddenInput: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    opacity: 0,
   },
 });
