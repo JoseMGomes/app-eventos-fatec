@@ -17,6 +17,19 @@ import { styles } from "./LoginScreen.styles";
 
 type ViewState = "login" | "2fa" | "recovery";
 
+const USUARIOS_TESTE: any = {
+  "prof@fatec.sp.gov.br": {
+    senha: "123",
+    tipo: "PROFESSOR",
+    nome: "Professor",
+  },
+  "aluno@fatec.sp.gov.br": {
+    senha: "123",
+    tipo: "ALUNO",
+    nome: "José Lucas",
+  },
+};
+
 const LoginScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
 
@@ -30,9 +43,9 @@ const LoginScreen = () => {
 
   const getGreeting = () => {
     const hora = new Date().getHours();
-    if (hora >= 5 && hora < 12) return "Bom dia!";
-    if (hora >= 12 && hora < 18) return "Boa tarde!";
-    return "Boa noite!";
+    if (hora >= 5 && hora < 12) return "Bom dia";
+    if (hora >= 12 && hora < 18) return "Boa tarde";
+    return "Boa noite";
   };
 
   const switchViewAnimada = (novaView: ViewState) => {
@@ -66,10 +79,17 @@ const LoginScreen = () => {
   };
 
   const handleAcessar = () => {
-    if (!email.includes("@")) {
-      Alert.alert("Erro", "Por favor, insira um e-mail válido.");
+    const emailFormatado = email.trim().toLowerCase();
+    const usuarioBanco = USUARIOS_TESTE[emailFormatado];
+
+    if (!usuarioBanco || usuarioBanco.senha !== password) {
+      Alert.alert(
+        "Acesso Negado",
+        "Tente usar prof@fatec.sp.gov.br ou aluno@fatec.sp.gov.br com a senha 123.",
+      );
       return;
     }
+
     switchViewAnimada("2fa");
   };
 
@@ -79,12 +99,13 @@ const LoginScreen = () => {
       return;
     }
 
-    const isProfessor = email.toLowerCase().includes("prof");
+    const emailFormatado = email.trim().toLowerCase();
+    const usuarioLogado = USUARIOS_TESTE[emailFormatado];
 
-    if (isProfessor) {
+    if (usuarioLogado.tipo === "PROFESSOR") {
       navigation.replace("MainTabs");
     } else {
-      navigation.replace("MainTabs");
+      navigation.replace("AlunoTabs" as any);
     }
   };
 
@@ -255,8 +276,9 @@ const LoginScreen = () => {
             color={COLORS.branco}
           />
           <Text style={styles.title}>Fatec Eventos</Text>
-          <Text style={styles.subtitle}>{getGreeting()}</Text>
-          <Text style={styles.subtitle}>Seja muito bem vindo!</Text>
+          <Text style={styles.subtitle}>
+            {getGreeting()}! Seja muito bem-vindo.
+          </Text>
         </View>
       </View>
 

@@ -12,13 +12,18 @@ import ManageCategoriesScreen from "../screens/ManageCategories/ManageCategories
 import ManageCoursesScreen from "../screens/ManageCourses/ManageCoursesScreen";
 import EditProfileScreen from "../screens/EditProfile/EditProfileScreen";
 import SettingsScreen from "../screens/Settings/SettingsScreen";
-
+import AlunoTabNavigator from "./AlunoTabNavigator";
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Login">
+        <Stack.Screen
+          name="AlunoTabs"
+          component={AlunoTabNavigator}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="Login"
           component={LoginScreen}
@@ -73,22 +78,22 @@ const AppNavigator = () => {
             title: "Gerenciar Cursos",
           }}
         />
-        <Stack.Screen 
-        name="EditProfile" 
-        component={EditProfileScreen} 
-        options={{ 
-          headerShown: true, 
-          title: 'Gerenciar perfil', 
-        }} 
-      />
-      <Stack.Screen 
-        name="Settings" 
-        component={SettingsScreen} 
-        options={{ 
-          headerShown: true, 
-          title: 'Configurações', 
-        }} 
-      />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          options={{
+            headerShown: true,
+            title: "Gerenciar perfil",
+          }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{
+            headerShown: true,
+            title: "Configurações",
+          }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
