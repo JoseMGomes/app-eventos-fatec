@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../styles/colors";
 import AlunoHomeScreen from "../screens/AlunoHome/AlunoHomeScreen";
-import ProfileScreen from "../screens/Profile/ProfileScreen";
+import AlunoProfileScreen from "../screens/AlunoProfile/AlunoProfileScreen";
 
 const MeusEventosPlaceholder = () => (
   <View
@@ -159,7 +159,7 @@ const AlunoTabNavigator = () => {
 
       <Tab.Screen
         name="Perfil"
-        component={ProfileScreen}
+        component={AlunoProfileScreen}
         options={{
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedTabBarIcon
