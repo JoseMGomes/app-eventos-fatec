@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../styles/colors";
 import AlunoHomeScreen from "../screens/AlunoHome/AlunoHomeScreen";
 import AlunoProfileScreen from "../screens/AlunoProfile/AlunoProfileScreen";
+import AlunoInscricoesScreen from "../screens/AlunoInscricoes/AlunoInscricoesScreens";
 
 const MeusEventosPlaceholder = () => (
   <View
@@ -143,7 +144,7 @@ const AlunoTabNavigator = () => {
 
       <Tab.Screen
         name="Inscrições"
-        component={MeusEventosPlaceholder}
+        component={AlunoInscricoesScreen}
         options={{
           tabBarIcon: ({ focused, color, size }) => (
             <AnimatedTabBarIcon
