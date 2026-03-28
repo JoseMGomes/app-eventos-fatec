@@ -7,6 +7,8 @@ import {
   StatusBar,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { AppNavigationProp } from "../../navigation/types";
 import { COLORS } from "../../styles/colors";
 import { styles } from "./AlunoIncricoesScreens.styles";
 
@@ -30,6 +32,7 @@ const MINHAS_INSCRICOES_MOCK = [
 ];
 
 const AlunoInscricoesScreen = () => {
+  const navigation = useNavigation<AppNavigationProp>();
   const [inscricoes, setInscricoes] = useState(MINHAS_INSCRICOES_MOCK);
 
   const formatarData = (dataISO: string) => {
@@ -91,9 +94,7 @@ const AlunoInscricoesScreen = () => {
               { backgroundColor: COLORS.vermelhoPrincipal },
             ]}
             activeOpacity={0.8}
-            onPress={() =>
-              alert(`Abrindo câmera/GPS para validar: ${item.nome}`)
-            }
+            onPress={() => navigation.navigate("CheckinAluno")}
           >
             <MaterialCommunityIcons
               name="qrcode-scan"

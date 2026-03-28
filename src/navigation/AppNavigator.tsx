@@ -13,6 +13,8 @@ import ManageCoursesScreen from "../screens/ManageCourses/ManageCoursesScreen";
 import EditProfileScreen from "../screens/EditProfile/EditProfileScreen";
 import SettingsScreen from "../screens/Settings/SettingsScreen";
 import AlunoTabNavigator from "./AlunoTabNavigator";
+import CheckinAlunoScreen from "../screens/CheckinAluno/CheckinAlunoScreen";
+
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -92,6 +94,15 @@ const AppNavigator = () => {
           options={{
             headerShown: true,
             title: "Configurações",
+          }}
+        />
+        <Stack.Screen
+          name="CheckinAluno"
+          component={CheckinAlunoScreen}
+          options={{ 
+            title: "Validação de Presença", 
+            headerShown: true, 
+            headerTintColor: "#A90000" 
           }}
         />
       </Stack.Navigator>
