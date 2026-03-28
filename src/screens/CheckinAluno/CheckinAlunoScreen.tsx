@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Linking,
+  Platform,
 } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import * as Location from "expo-location";
@@ -35,8 +37,10 @@ const CheckinAlunoScreen = () => {
     lon2: number,
   ) => {
     const raioDaTerraEmMetros = 6371e3;
+
     const latitude1EmRadianos = (lat1 * Math.PI) / 180;
     const latitude2EmRadianos = (lat2 * Math.PI) / 180;
+
     const diferencaLatitudeEmRadianos = ((lat2 - lat1) * Math.PI) / 180;
     const diferencaLongitudeEmRadianos = ((lon2 - lon1) * Math.PI) / 180;
 
@@ -55,10 +59,26 @@ const CheckinAlunoScreen = () => {
   };
 
   const formatarDistancia = (dist: number) => {
-    if (dist >= 1000) {
-      return `${(dist / 1000).toFixed(1)} km`;
-    }
+    if (dist >= 1000) return `${(dist / 1000).toFixed(1)} km`;
     return `${dist}m`;
+  };
+
+  const abrirRotas = () => {
+    const latLng = `${FATEC_COORDENADAS.latitude},${FATEC_COORDENADAS.longitude}`;
+    const label = "Fatec Itu";
+
+    const url = Platform.select({
+      ios: `maps:0,0?q=${label}@${latLng}`,
+      android: `geo:0,0?q=${latLng}(${label})`,
+    });
+
+    if (url) {
+      Linking.openURL(url).catch(() => {
+        Linking.openURL(
+          `https://www.google.com/maps/search/?api=1&query=${latLng}`,
+        );
+      });
+    }
   };
 
   useEffect(() => {
@@ -98,7 +118,7 @@ const CheckinAlunoScreen = () => {
     if (distancia !== null && distancia > RAIO_PERMITIDO_METROS) {
       Alert.alert(
         "Fora do Local",
-        `Você está a ${formatarDistancia(distancia)} do evento. É necessário estar a no máximo ${RAIO_PERMITIDO_METROS} metros para validar a presença.`,
+        `Você está a ${formatarDistancia(distancia)} do evento. É necessário estar a no máximo ${RAIO_PERMITIDO_METROS}m para validar a presença.`,
       );
       return;
     }
@@ -160,33 +180,48 @@ const CheckinAlunoScreen = () => {
           Confirme sua localização e digite o código do painel.
         </Text>
 
-        <View
-          style={[
-            styles.distanceBadge,
-            { backgroundColor: estaNoRaio ? "#E8F5E9" : "#FCE8E8" },
-          ]}
-        >
-          <MaterialCommunityIcons
-            name={
-              estaNoRaio
-                ? "map-marker-check-outline"
-                : "map-marker-alert-outline"
-            }
-            size={20}
-            color={estaNoRaio ? "#27AE60" : COLORS.vermelhoPrincipal}
-          />
-          <Text
+        <View style={styles.badgesRow}>
+          <View
             style={[
-              styles.distanceText,
-              { color: estaNoRaio ? "#27AE60" : COLORS.vermelhoPrincipal },
+              styles.distanceBadge,
+              { backgroundColor: estaNoRaio ? "#E8F5E9" : "#FCE8E8" },
             ]}
           >
-            {distancia !== null
-              ? estaNoRaio
-                ? `Você está no local (${formatarDistancia(distancia)})`
-                : `Você está muito longe (${formatarDistancia(distancia)})`
-              : "Calculando distância..."}
-          </Text>
+            <MaterialCommunityIcons
+              name={
+                estaNoRaio
+                  ? "map-marker-check-outline"
+                  : "map-marker-alert-outline"
+              }
+              size={18}
+              color={estaNoRaio ? "#27AE60" : COLORS.vermelhoPrincipal}
+            />
+            <Text
+              style={[
+                styles.distanceText,
+                { color: estaNoRaio ? "#27AE60" : COLORS.vermelhoPrincipal },
+              ]}
+            >
+              {distancia !== null
+                ? estaNoRaio
+                  ? `Você está no local (${formatarDistancia(distancia)})`
+                  : `Você está longe (${formatarDistancia(distancia)})`
+                : "Calculando..."}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.routeButton}
+            activeOpacity={0.7}
+            onPress={abrirRotas}
+          >
+            <MaterialCommunityIcons
+              name="directions"
+              size={18}
+              color={COLORS.vermelhoPrincipal}
+            />
+            <Text style={styles.routeButtonText}>Como chegar</Text>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.inputLabel}>Palavra Secreta do Professor</Text>
