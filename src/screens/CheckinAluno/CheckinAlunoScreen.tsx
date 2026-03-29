@@ -40,7 +40,6 @@ const CheckinAlunoScreen = () => {
 
     const latitude1EmRadianos = (lat1 * Math.PI) / 180;
     const latitude2EmRadianos = (lat2 * Math.PI) / 180;
-
     const diferencaLatitudeEmRadianos = ((lat2 - lat1) * Math.PI) / 180;
     const diferencaLongitudeEmRadianos = ((lon2 - lon1) * Math.PI) / 180;
 
