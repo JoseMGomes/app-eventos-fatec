@@ -14,6 +14,7 @@ import EditProfileScreen from "../screens/EditProfile/EditProfileScreen";
 import SettingsScreen from "../screens/Settings/SettingsScreen";
 import AlunoTabNavigator from "./AlunoTabNavigator";
 import CheckinAlunoScreen from "../screens/CheckinAluno/CheckinAlunoScreen";
+import RegisterScreen from "../screens/Register/RegisterScreen";
 
 const Stack = createStackNavigator();
 
@@ -99,11 +100,14 @@ const AppNavigator = () => {
         <Stack.Screen
           name="CheckinAluno"
           component={CheckinAlunoScreen}
-          options={{ 
-            title: "Validação de Presença", 
-            headerShown: true, 
-            headerTintColor: "#A90000" 
+          options={{
+            title: "Validação de Presença",
           }}
+        />
+        <Stack.Screen
+          name="Register"
+          component={RegisterScreen}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

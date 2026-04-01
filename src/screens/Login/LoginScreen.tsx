@@ -161,6 +161,20 @@ const LoginScreen = () => {
           >
             <Text style={styles.mainButtonText}>Entrar</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{ alignItems: "center", marginTop: 25 }}
+            onPress={() => navigation.navigate("Register")}
+          >
+            <Text style={{ color: COLORS.textoSecundario, fontSize: 14 }}>
+              Não tem uma conta?{" "}
+              <Text
+                style={{ color: COLORS.vermelhoPrincipal, fontWeight: "bold" }}
+              >
+                Cadastre-se
+              </Text>
+            </Text>
+          </TouchableOpacity>
         </>
       );
     }

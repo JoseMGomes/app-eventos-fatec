@@ -25,6 +25,7 @@ export type RootStackParamList = {
   ManageCourses: undefined;
   EditProfile: undefined;
   Settings: undefined;
+  Register: undefined;
   CheckinAluno: undefined;
 };
 
