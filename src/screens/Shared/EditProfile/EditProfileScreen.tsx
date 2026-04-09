@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,39 +6,97 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./EditProfileScreen.styles";
+import { authService } from "../../../services/authService";
 
 const EditProfileScreen = () => {
   const navigation = useNavigation();
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [nome, setNome] = useState("Vinicius Leal");
-  const [email, setEmail] = useState("vinicius.leal@fatec.sp.gov.br");
+  useEffect(() => {
+    const carregarDados = async () => {
+      try {
+        const response = await authService.getMe();
+        if (response.data) {
+          setNome(response.data.name || "");
+          setEmail(response.data.email || "");
+        }
+      } catch (error) {
+        console.warn("Erro ao buscar dados do perfil:", error);
+        Alert.alert("Erro", "Não foi possível carregar seus dados atuais.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleSalvarPerfil = () => {
+    carregarDados();
+  }, []);
+
+  const handleSalvarPerfil = async () => {
     if (!nome.trim() || !email.trim()) {
       Alert.alert("Atenção", "Os campos Nome e E-mail não podem ficar vazios.");
       return;
     }
 
-    Alert.alert("Sucesso", "Perfil atualizado com sucesso!", [
-      { text: "OK", onPress: () => navigation.goBack() }
-    ]);
+    setIsSaving(true);
+
+    try {
+      await authService.getCSRF();
+      await authService.updateProfile(nome.trim(), email.trim().toLowerCase());
+      setIsSaving(false);
+      Alert.alert("Sucesso", "Perfil atualizado com sucesso!", [
+        { text: "OK", onPress: () => navigation.goBack() },
+      ]);
+    } catch (error: any) {
+      setIsSaving(false);
+
+      console.log(
+        "ERRO AO SALVAR PERFIL:",
+        error.response?.data || error.message,
+      );
+      const msg =
+        error.response?.data?.message || "Ocorreu um erro na conexão.";
+      Alert.alert(
+        "Erro ao Salvar",
+        `Não foi possível atualizar os dados.\n\nDetalhe: ${msg}`,
+      );
+    }
   };
+
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Nome</Text>
+          <Text style={styles.label}>Nome Completo</Text>
           <TextInput
             style={styles.input}
             value={nome}
             onChangeText={setNome}
+            placeholder="Digite seu nome"
+            placeholderTextColor="#999"
           />
         </View>
 
@@ -50,35 +108,23 @@ const EditProfileScreen = () => {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            placeholder="Digite seu e-mail"
+            placeholderTextColor="#999"
           />
         </View>
 
-        <View style={styles.imageUploadContainer}>
-          <TouchableOpacity style={styles.imageUploadMain} activeOpacity={0.7}>
-            <View style={styles.imageUploadIcons}>
-              <MaterialCommunityIcons name="camera-outline" size={28} color={COLORS.textoPrincipal} />
-              <View style={styles.iconDivider} />
-              <MaterialCommunityIcons name="image-outline" size={28} color={COLORS.textoPrincipal} />
-            </View>
-            <Text style={styles.imageUploadText}>
-              Clique, cole ou arraste e solte para{"\n"}selecionar uma imagem!
-            </Text>
-          </TouchableOpacity>
-          
-          <View style={styles.imageUploadFooter}>
-            <TouchableOpacity>
-              <MaterialCommunityIcons name="upload-outline" size={24} color={COLORS.vermelhoPrincipal} />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <MaterialCommunityIcons name="trash-can-outline" size={24} color="#A0A0A0" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.submitButton} onPress={handleSalvarPerfil} activeOpacity={0.8}>
-          <Text style={styles.submitButtonText}>Salvar</Text>
+        <TouchableOpacity
+          style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
+          onPress={handleSalvarPerfil}
+          activeOpacity={0.8}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator color={COLORS.branco} />
+          ) : (
+            <Text style={styles.submitButtonText}>Salvar Alterações</Text>
+          )}
         </TouchableOpacity>
-
       </ScrollView>
     </View>
   );
