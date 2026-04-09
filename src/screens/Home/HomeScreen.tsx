@@ -8,99 +8,15 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import EventCard from "../../components/EventCard";
 import { AppNavigationProp } from "../../navigation/types";
 import { COLORS } from "../../styles/colors";
 import { styles } from "./HomeScreen.styles";
-
-const DADOS_EVENTOS = [
-  {
-    id: "1",
-    nome: "Torneio de Programação",
-    data: "2026-05-12T10:30:00",
-    local: "Lab ensaios metalograficos",
-    palestrante: "Coordenação de TI",
-    imagemUrl: "https://i.imgur.com/7sHS3dG.jpeg",
-    descricao:
-      "Competição entre alunos para resolver desafios algorítmicos em tempo recorde.",
-    eventoRestrito: false,
-    curso: "Disponível para todos os cursos",
-    semestre: "Disponível para todos os semestres",
-    categoria: "Tecnologia",
-  },
-  {
-    id: "2",
-    nome: "Workshop de Smart Cities",
-    data: "2026-05-28T07:30:00",
-    local: "Lab informatica 1",
-    palestrante: "Eng. Rodrigo Mendonça",
-    imagemUrl: "https://i.imgur.com/Kx9dOC4.jpeg",
-    descricao:
-      "Aprenda sobre as tecnologias que estão transformando as cidades em ambientes mais inteligentes e sustentáveis.",
-    eventoRestrito: false,
-    curso: "Gestão da Produção Industrial",
-    semestre: "3º ao 6º Semestre",
-    categoria: "Gestão",
-  },
-  {
-    id: "3",
-    nome: "Palestra sobre IA",
-    data: "2026-06-10T19:00:00",
-    local: "Auditório Principal",
-    palestrante: "Profª. Drª. Ada Lovelace",
-    imagemUrl: "https://i.imgur.com/9iLhxKO.jpeg",
-    descricao:
-      "Uma introdução aos conceitos de Inteligência Artificial e Machine Learning e seu impacto no mercado de trabalho.",
-    eventoRestrito: true,
-    curso: "Análise e Desenv. de Sistemas",
-    semestre: "Disponível para todos os semestres",
-    categoria: "Tecnologia",
-  },
-  {
-    id: "4",
-    nome: "Semana Cloud AWS & Azure",
-    data: "2026-08-04T09:00:00",
-    local: "Auditório Principal",
-    palestrante: "Especialistas do Mercado",
-    imagemUrl: "https://i.imgur.com/OCNA52V.jpeg",
-    descricao:
-      "Uma semana de imersão nas principais plataformas de nuvem do mercado, com palestras e hands-on.",
-    eventoRestrito: true,
-    curso: "Análise e Desenv. de Sistemas",
-    semestre: "4º ao 6º Semestre",
-    categoria: "Tecnologia",
-  },
-  {
-    id: "5",
-    nome: "Recepção de Calouros 2026",
-    data: "2026-02-10T19:30:00",
-    local: "Pátio Central",
-    palestrante: "Diretoria e Veteranos",
-    imagemUrl: "https://i.imgur.com/qE4l5i8.jpeg",
-    descricao:
-      "Evento de boas-vindas para os novos alunos da Fatec Itu, com apresentação dos cursos e tour pelo campus.",
-    eventoRestrito: false,
-    curso: "Todos os cursos",
-    semestre: "1º Semestre",
-    categoria: "Geral",
-  },
-  {
-    id: "6",
-    nome: "Workshop de Python para Análise de Dados",
-    data: "2026-09-05T14:00:00",
-    local: "Laboratório de Informática 3",
-    palestrante: "Profª. Joana da Silva",
-    imagemUrl: "https://i.imgur.com/X0w5a2s.jpeg",
-    descricao:
-      "Aprenda os fundamentos de bibliotecas como Pandas e Matplotlib para manipulação e visualização de dados.",
-    eventoRestrito: true,
-    curso: "Análise e Desenv. de Sistemas",
-    semestre: "Todos os semestres",
-    categoria: "Tecnologia",
-  },
-];
+import { authService } from "../../services/authService";
+import { eventService } from "../../services/eventService";
 
 const CATEGORIAS = ["Todos", "Tecnologia", "Gestão", "Geral"];
 
@@ -111,6 +27,12 @@ type Props = {
 const HomeScreen = ({ navigation }: Props) => {
   const [busca, setBusca] = useState("");
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todos");
+  const [eventosApi, setEventosApi] = useState<any[]>([]);
+  const [isLoadingEventos, setIsLoadingEventos] = useState(true);
+  const [userName, setUserName] = useState("Professor(a)");
+  const [userRole, setUserRole] = useState<
+    "ADMIN" | "COORDENADOR" | "AUXILIAR" | null
+  >(null);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (e) => {
@@ -133,7 +55,51 @@ const HomeScreen = ({ navigation }: Props) => {
     return unsubscribe;
   }, [navigation]);
 
-  const eventosFiltrados = DADOS_EVENTOS.filter((evento) => {
+  useEffect(() => {
+    const carregarDadosDaTela = async () => {
+      try {
+        const responseAuth = await authService.getMe();
+        if (responseAuth.data) {
+          setUserName(responseAuth.data.name || "Professor(a)");
+          setUserRole(responseAuth.data.role);
+        }
+
+        const responseEvents = await eventService.getAllAdminEvents();
+        const eventosFormatados = responseEvents.data.map((ev: any) => {
+          const pedacoData = ev.startDate ? ev.startDate.split("T")[0] : "";
+          const pedacoHora = ev.startTime
+            ? ev.startTime.split("T")[1]
+            : "00:00:00.000Z";
+          const dataCorrigida = `${pedacoData}T${pedacoHora}`;
+
+          return {
+            id: String(ev.id),
+            nome: ev.name,
+            data: dataCorrigida,
+            local:
+              ev.locationName?.toLowerCase() === "outros"
+                ? ev.customLocation
+                : ev.locationName,
+            palestrante: ev.speakerName,
+            imagemUrl: ev.imageUrl,
+            descricao: ev.description,
+            eventoRestrito: ev.isRestricted,
+            categoria: ev.categoryName || "Geral",
+          };
+        });
+
+        setEventosApi(eventosFormatados);
+      } catch (error) {
+        console.warn("Erro ao buscar dados na Home:", error);
+      } finally {
+        setIsLoadingEventos(false);
+      }
+    };
+
+    carregarDadosDaTela();
+  }, []);
+
+  const eventosFiltrados = eventosApi.filter((evento) => {
     const textoBuscado = busca.toLowerCase();
     const nomeEvento = evento.nome.toLowerCase();
     const passaNaBusca = nomeEvento.includes(textoBuscado);
@@ -150,7 +116,21 @@ const HomeScreen = ({ navigation }: Props) => {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cinzaFundo} />
 
       <View style={styles.header}>
-        <Text style={styles.saudacao}>Olá, Professor(a) 👋</Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text style={styles.saudacao}>Olá, {userName.split(" ")[0]} 👋</Text>
+
+          {userRole && (
+            <View style={styles.roleTag}>
+              <Text style={styles.roleTagText}>{userRole}</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.tituloDescubra}>Gestão de Eventos</Text>
       </View>
 
@@ -177,6 +157,7 @@ const HomeScreen = ({ navigation }: Props) => {
           </TouchableOpacity>
         )}
       </View>
+
       <View>
         <ScrollView
           horizontal
@@ -204,21 +185,45 @@ const HomeScreen = ({ navigation }: Props) => {
           ))}
         </ScrollView>
       </View>
-      <FlatList
-        data={eventosFiltrados}
-        renderItem={({ item }) => (
-          <EventCard
-            evento={item}
-            onPress={() => navigation.navigate("EventDetail", { evento: item })}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={() => (
-          <Text style={styles.listaVazia}>Nenhum evento encontrado. 😢</Text>
-        )}
-      />
+
+      {isLoadingEventos ? (
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
+          <Text style={{ marginTop: 10, color: COLORS.textoSecundario }}>
+            Buscando eventos...
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={eventosFiltrados}
+          renderItem={({ item }) => (
+            <EventCard
+              evento={item}
+              onPress={() =>
+                navigation.navigate("EventDetail", { evento: item })
+              }
+            />
+          )}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <Text style={styles.listaVazia}>Nenhum evento encontrado. 😢</Text>
+          )}
+        />
+      )}
+
+      {(userRole === "ADMIN" || userRole === "COORDENADOR") && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => navigation.navigate("CreateEvent" as any)}
+          activeOpacity={0.8}
+        >
+          <MaterialCommunityIcons name="plus" size={30} color={COLORS.branco} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
