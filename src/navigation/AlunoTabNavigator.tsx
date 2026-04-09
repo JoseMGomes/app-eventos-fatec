@@ -3,9 +3,9 @@ import { View, Text, Platform, Animated } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../styles/colors";
-import AlunoHomeScreen from "../screens/AlunoHome/AlunoHomeScreen";
-import AlunoProfileScreen from "../screens/AlunoProfile/AlunoProfileScreen";
-import AlunoInscricoesScreen from "../screens/AlunoInscricoes/AlunoInscricoesScreens";
+import AlunoHomeScreen from "../screens/Aluno/AlunoHome/AlunoHomeScreen";
+import AlunoProfileScreen from "../screens/Aluno/AlunoProfile/AlunoProfileScreen";
+import AlunoInscricoesScreen from "../screens/Aluno/AlunoInscricoes/AlunoInscricoesScreens";
 
 const MeusEventosPlaceholder = () => (
   <View

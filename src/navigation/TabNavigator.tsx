@@ -3,9 +3,9 @@ import { View, Text, Platform, Animated } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../styles/colors";
-import HomeScreen from "../screens/Home/HomeScreen";
-import AdminDashboardScreen from "../screens/Admin/AdminDashboardScreen";
-import ProfileScreen from "../screens/Profile/ProfileScreen";
+import HomeScreen from "../screens/Professor/Home/HomeScreen";
+import AdminDashboardScreen from "../screens/Professor/Admin/AdminDashboardScreen";
+import ProfileScreen from "../screens/Shared/Profile/ProfileScreen";
 
 type AnimatedIconProps = {
   focused: boolean;
