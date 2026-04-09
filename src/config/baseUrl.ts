@@ -1,3 +1,3 @@
 export default {
-  URL: "http://agendafatec.dyndns.org:6868", 
+  URL: "http://agendafatec.dyndns.org:6868/apiEvents", 
 };

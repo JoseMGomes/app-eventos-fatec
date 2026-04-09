@@ -8,35 +8,26 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import * as SecureStore from "expo-secure-store";
 import { AppNavigationProp } from "../../navigation/types";
 import { COLORS } from "../../styles/colors";
 import { styles } from "./LoginScreen.styles";
+import { authService } from "../../services/authService";
+import { saveToken } from "../../utils/tokenSave";
 
 type ViewState = "login" | "2fa" | "recovery";
 
-const USUARIOS_TESTE: any = {
-  "prof@fatec.sp.gov.br": {
-    senha: "123",
-    tipo: "PROFESSOR",
-    nome: "Professor",
-  },
-  "aluno@fatec.sp.gov.br": {
-    senha: "123",
-    tipo: "ALUNO",
-    nome: "José Lucas",
-  },
-};
-
 const LoginScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code2FA, setCode2FA] = useState("");
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [viewState, setViewState] = useState<ViewState>("login");
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -78,34 +69,67 @@ const LoginScreen = () => {
     });
   };
 
-  const handleAcessar = () => {
-    const emailFormatado = email.trim().toLowerCase();
-    const usuarioBanco = USUARIOS_TESTE[emailFormatado];
-
-    if (!usuarioBanco || usuarioBanco.senha !== password) {
-      Alert.alert(
-        "Acesso Negado",
-        "Tente usar prof@fatec.sp.gov.br ou aluno@fatec.sp.gov.br com a senha 123.",
-      );
+  const handleAcessar = async () => {
+    if (!email.includes("@") || !password) {
+      Alert.alert("Erro", "Por favor, preencha o e-mail e a senha.");
       return;
     }
 
-    switchViewAnimada("2fa");
+    setIsLoading(true);
+    const emailFormatado = email.trim().toLowerCase();
+
+    try {
+      const perfilAluno = await SecureStore.getItemAsync("perfil_aluno");
+      if (perfilAluno) {
+        const dadosAluno = JSON.parse(perfilAluno);
+        if (
+          dadosAluno.email === emailFormatado &&
+          dadosAluno.documento === password
+        ) {
+          setIsLoading(false);
+          navigation.replace("AlunoTabs" as any);
+          return;
+        }
+      }
+
+      await authService.getCSRF();
+      const response = await authService.requestLogin(emailFormatado, password);
+
+      setIsLoading(false);
+      switchViewAnimada("2fa");
+    } catch (error: any) {
+      setIsLoading(false);
+      const mensagemErro =
+        error.response?.data?.message || "E-mail ou senha incorretos.";
+      Alert.alert(
+        "Acesso Negado",
+        `Não foi possível entrar.\n\nDetalhe: ${mensagemErro}`,
+      );
+    }
   };
 
-  const handleVerificarCodigo = () => {
+  const handleVerificarCodigo = async () => {
     if (code2FA.length < 6) {
       Alert.alert("Erro", "O código deve conter 6 dígitos.");
       return;
     }
 
-    const emailFormatado = email.trim().toLowerCase();
-    const usuarioLogado = USUARIOS_TESTE[emailFormatado];
+    setIsLoading(true);
 
-    if (usuarioLogado.tipo === "PROFESSOR") {
+    try {
+      await authService.getCSRF();
+      const response = await authService.login(code2FA);
+      if (response.data && response.data.token) {
+        await saveToken(response.data.token);
+      }
+
+      setIsLoading(false);
+      Alert.alert("Sucesso!", "Bem-vindo(a)!");
       navigation.replace("MainTabs");
-    } else {
-      navigation.replace("AlunoTabs" as any);
+    } catch (error: any) {
+      setIsLoading(false);
+      const mensagemErro = error.response?.data?.message || "Código inválido.";
+      Alert.alert("Erro na Validação", mensagemErro);
     }
   };
 
@@ -130,6 +154,7 @@ const LoginScreen = () => {
               keyboardType="email-address"
               autoCapitalize="none"
               placeholderTextColor="#999"
+              editable={!isLoading}
             />
           </View>
 
@@ -145,12 +170,28 @@ const LoginScreen = () => {
               placeholder="Senha"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!showPassword}
               placeholderTextColor="#999"
+              editable={!isLoading}
             />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={{ padding: 5 }}
+              activeOpacity={0.7}
+              disabled={isLoading}
+            >
+              <MaterialCommunityIcons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color={COLORS.textoSecundario}
+              />
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={() => switchViewAnimada("recovery")}>
+          <TouchableOpacity
+            onPress={() => switchViewAnimada("recovery")}
+            disabled={isLoading}
+          >
             <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
           </TouchableOpacity>
 
@@ -158,13 +199,19 @@ const LoginScreen = () => {
             style={styles.mainButton}
             onPress={handleAcessar}
             activeOpacity={0.8}
+            disabled={isLoading}
           >
-            <Text style={styles.mainButtonText}>Entrar</Text>
+            {isLoading ? (
+              <ActivityIndicator color={COLORS.branco} />
+            ) : (
+              <Text style={styles.mainButtonText}>Entrar</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={{ alignItems: "center", marginTop: 25 }}
             onPress={() => navigation.navigate("Register")}
+            disabled={isLoading}
           >
             <Text style={{ color: COLORS.textoSecundario, fontSize: 14 }}>
               Não tem uma conta?{" "}
@@ -200,7 +247,6 @@ const LoginScreen = () => {
                 <Text style={styles.otpText}>{code2FA[index] || ""}</Text>
               </View>
             ))}
-
             <TextInput
               style={styles.hiddenInput}
               value={code2FA}
@@ -209,6 +255,7 @@ const LoginScreen = () => {
               maxLength={6}
               caretHidden={true}
               autoFocus={true}
+              editable={!isLoading}
             />
           </View>
 
@@ -216,13 +263,19 @@ const LoginScreen = () => {
             style={styles.mainButton}
             onPress={handleVerificarCodigo}
             activeOpacity={0.8}
+            disabled={isLoading}
           >
-            <Text style={styles.mainButtonText}>Validar Código</Text>
+            {isLoading ? (
+              <ActivityIndicator color={COLORS.branco} />
+            ) : (
+              <Text style={styles.mainButtonText}>Validar Código</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.secondaryButton}
             onPress={() => switchViewAnimada("login")}
+            disabled={isLoading}
           >
             <Text style={styles.secondaryButtonText}>Voltar para o Login</Text>
           </TouchableOpacity>
