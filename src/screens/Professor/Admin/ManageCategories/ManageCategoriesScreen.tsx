@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,176 +7,179 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageCategoriesScreen.styles";
-
-const MOCK_CATEGORIAS = [
-  {
-    id: "1",
-    nome: "Competição acadêmica",
-    criadoEm: "30/09/2025 - 16:26:21",
-    editadoEm: "30/09/2025 - 16:26:21",
-  },
-  {
-    id: "2",
-    nome: "Exposição",
-    criadoEm: "30/09/2025 - 16:26:16",
-    editadoEm: "30/09/2025 - 16:26:28",
-  },
-  {
-    id: "3",
-    nome: "Conferência",
-    criadoEm: "30/09/2025 - 16:26:12",
-    editadoEm: "30/09/2025 - 16:26:33",
-  },
-  {
-    id: "4",
-    nome: "Workshop",
-    criadoEm: "30/09/2025 - 16:26:05",
-    editadoEm: "30/09/2025 - 16:26:05",
-  },
-  {
-    id: "5",
-    nome: "Seminário",
-    criadoEm: "30/09/2025 - 16:26:01",
-    editadoEm: "30/09/2025 - 16:26:01",
-  },
-];
+import { categoryService } from "../../../../services/categoryService"; 
 
 const ManageCategoriesScreen = () => {
+  const [categorias, setCategorias] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [nomeCategoria, setNomeCategoria] = useState("");
-  // Estado para saber se estamos editando (guarda o ID) ou criando (fica null)
-  const [categoriaEmEdicao, setCategoriaEmEdicao] = useState<string | null>(
-    null,
-  );
+  const [categoriaEmEdicao, setCategoriaEmEdicao] = useState<string | null>(null);
 
-  // Função para abrir o modal limpo para CRIAR
+  useEffect(() => {
+    carregarCategorias();
+  }, []);
+
+  const carregarCategorias = async () => {
+    setIsLoading(true);
+    try {
+      const response = await categoryService.getAll();
+      setCategorias(response.data);
+    } catch (error) {
+      console.warn("Erro ao carregar categorias:", error);
+      Alert.alert("Erro", "Não foi possível carregar a lista de categorias.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const abrirModalCriacao = () => {
     setCategoriaEmEdicao(null);
     setNomeCategoria("");
     setModalVisible(true);
   };
 
-  // Função para abrir o modal preenchido para EDITAR
   const abrirModalEdicao = (categoria: any) => {
     setCategoriaEmEdicao(categoria.id);
-    setNomeCategoria(categoria.nome);
+    setNomeCategoria(categoria.name); 
     setModalVisible(true);
   };
 
-  // Função para fechar e limpar tudo
   const fecharModal = () => {
     setModalVisible(false);
     setNomeCategoria("");
     setCategoriaEmEdicao(null);
   };
 
-  // Função unificada de salvar (Serve para criar e editar)
-  const handleSalvarCategoria = () => {
+  const handleSalvarCategoria = async () => {
     if (!nomeCategoria.trim()) {
       Alert.alert("Atenção", "Por favor, insira o nome da categoria.");
       return;
     }
 
-    if (categoriaEmEdicao) {
-      Alert.alert(
-        "Sucesso",
-        `Categoria atualizada para "${nomeCategoria}" com sucesso!`,
-      );
-      // Aqui no futuro você fará o PUT para a sua API
-    } else {
-      Alert.alert(
-        "Sucesso",
-        `Categoria "${nomeCategoria}" criada com sucesso!`,
-      );
-      // Aqui no futuro você fará o POST para a sua API
-    }
+    setIsSaving(true);
 
-    fecharModal();
+    try {
+      if (categoriaEmEdicao) {
+        await categoryService.update(categoriaEmEdicao, nomeCategoria.trim());
+        Alert.alert("Sucesso", "Categoria atualizada!");
+      } else {
+        await categoryService.create(nomeCategoria.trim());
+        Alert.alert("Sucesso", "Categoria criada!");
+      }
+      
+      fecharModal();
+      carregarCategorias(); 
+
+    } catch (error: any) {
+      const msg = error.response?.data?.message || "Ocorreu um erro no servidor.";
+      Alert.alert("Erro", `Não foi possível salvar.\nDetalhe: ${msg}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = (categoria: any) => {
+    Alert.alert(
+      "Confirmar exclusão",
+      `Você tem certeza que deseja excluir a categoria "${categoria.name}"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sim, excluir",
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              setIsLoading(true); 
+              await categoryService.delete(categoria.id);
+              Alert.alert("Excluída", "Categoria removida com sucesso.");
+              carregarCategorias(); 
+            } catch (error: any) {
+              setIsLoading(false);
+              const msg = error.response?.data?.message || "Ocorreu um erro ao excluir.";
+              Alert.alert("Erro", `Não foi possível excluir a categoria.\nDetalhe: ${msg}`);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const formatarData = (dataISO: string) => {
+    if (!dataISO) return "---";
+    const date = new Date(dataISO);
+    return `${date.toLocaleDateString("pt-BR")} - ${date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
   };
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={styles.categoryCard}>
       <View style={styles.categoryInfo}>
-        <Text style={styles.categoryName}>{item.nome}</Text>
+        <Text style={styles.categoryName}>{item.name}</Text>
 
         <View style={styles.dateInfo}>
-          <MaterialCommunityIcons
-            name="calendar-plus"
-            size={14}
-            color={COLORS.textoSecundario}
-          />
-          <Text style={styles.dateText}>Criado: {item.criadoEm}</Text>
+          <MaterialCommunityIcons name="calendar-plus" size={14} color={COLORS.textoSecundario} />
+          <Text style={styles.dateText}>Criado: {formatarData(item.createdAt)}</Text>
         </View>
 
         <View style={styles.dateInfo}>
-          <MaterialCommunityIcons
-            name="calendar-edit"
-            size={14}
-            color={COLORS.textoSecundario}
-          />
-          <Text style={styles.dateText}>Editado: {item.editadoEm}</Text>
+          <MaterialCommunityIcons name="calendar-edit" size={14} color={COLORS.textoSecundario} />
+          <Text style={styles.dateText}>Editado: {formatarData(item.updatedAt)}</Text>
         </View>
       </View>
 
       <View style={styles.actionsColumn}>
-        {/* Agora o botão de editar chama a função passando a categoria atual */}
         <TouchableOpacity onPress={() => abrirModalEdicao(item)}>
-          <MaterialCommunityIcons
-            name="pencil"
-            size={24}
-            color={COLORS.textoSecundario}
-          />
+          <MaterialCommunityIcons name="pencil" size={24} color={COLORS.textoSecundario} />
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert("Excluir", `Deseja remover a categoria ${item.nome}?`)
-          }
-        >
-          <MaterialCommunityIcons
-            name="trash-can"
-            size={24}
-            color={COLORS.vermelhoPrincipal}
-          />
+        <TouchableOpacity onPress={() => handleDelete(item)}>
+          <MaterialCommunityIcons name="trash-can" size={24} color={COLORS.vermelhoPrincipal} />
         </TouchableOpacity>
       </View>
     </View>
   );
 
-  // Variáveis para mudar a cara do modal dinamicamente
   const isEditando = categoriaEmEdicao !== null;
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Categorias ({MOCK_CATEGORIAS.length})</Text>
+        <Text style={styles.title}>Categorias ({categorias.length})</Text>
         <TouchableOpacity style={styles.addButton} onPress={abrirModalCriacao}>
-          <MaterialCommunityIcons
-            name="tag-plus"
-            size={20}
-            color={COLORS.branco}
-          />
+          <MaterialCommunityIcons name="tag-plus" size={20} color={COLORS.branco} />
           <Text style={styles.addButtonText}>Criar nova</Text>
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={MOCK_CATEGORIAS}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
+        </View>
+      ) : (
+        <FlatList
+          data={categorias}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text style={{ textAlign: 'center', color: COLORS.textoSecundario, marginTop: 20 }}>
+              Nenhuma categoria encontrada.
+            </Text>
+          }
+        />
+      )}
 
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleContainer}>
-                {/* Muda o ícone dependendo se é criação ou edição */}
                 <MaterialCommunityIcons
                   name={isEditando ? "tag-edit" : "tag-plus"}
                   size={28}
@@ -186,7 +189,7 @@ const ManageCategoriesScreen = () => {
                   {isEditando ? "Editar categoria" : "Criar nova categoria"}
                 </Text>
               </View>
-              <TouchableOpacity onPress={fecharModal}>
+              <TouchableOpacity onPress={fecharModal} disabled={isSaving}>
                 <MaterialCommunityIcons
                   name="close-circle-outline"
                   size={28}
@@ -203,16 +206,22 @@ const ManageCategoriesScreen = () => {
                 value={nomeCategoria}
                 onChangeText={setNomeCategoria}
                 autoFocus
+                editable={!isSaving}
               />
             </View>
 
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
               onPress={handleSalvarCategoria}
+              disabled={isSaving}
             >
-              <Text style={styles.submitButtonText}>
-                {isEditando ? "Salvar Alterações" : "Criar"}
-              </Text>
+              {isSaving ? (
+                <ActivityIndicator color={COLORS.branco} />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {isEditando ? "Salvar Alterações" : "Criar"}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
