@@ -12,8 +12,8 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { AppNavigationProp } from "../../navigation/types";
-import { COLORS } from "../../styles/colors";
+import { AppNavigationProp } from "../../../navigation/types";
+import { COLORS } from "../../../styles/colors";
 import { styles } from "./RegisterScreen.styles";
 
 type TipoUsuario = "ALUNO" | "EXTERNO";

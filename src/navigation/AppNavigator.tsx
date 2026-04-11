@@ -13,8 +13,8 @@ import ManageCoursesScreen from "../screens/Professor/Admin/ManageCourses/Manage
 import EditProfileScreen from "../screens/Shared/EditProfile/EditProfileScreen";
 import SettingsScreen from "../screens/Shared/Settings/SettingsScreen";
 import AlunoTabNavigator from "./AlunoTabNavigator";
-import CheckinAlunoScreen from "../screens/CheckinAluno/CheckinAlunoScreen";
-import RegisterScreen from "../screens/Register/RegisterScreen";
+import CheckinAlunoScreen from "../screens/Aluno/CheckinAluno/CheckinAlunoScreen";
+import RegisterScreen from "../screens/Auth/Register/RegisterScreen";
 
 const Stack = createStackNavigator();
 

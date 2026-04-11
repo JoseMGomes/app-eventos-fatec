@@ -13,7 +13,7 @@ import MapView, { Marker, Circle } from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { COLORS } from "../../styles/colors";
+import { COLORS } from "../../../styles/colors";
 import { styles } from "./CheckinAlunoScreen.styles";
 
 const FATEC_COORDENADAS = {
