@@ -77,6 +77,7 @@ const LoginScreen = () => {
 
     setIsLoading(true);
     const emailFormatado = email.trim().toLowerCase();
+    const senhaFormatada = password.trim();
 
     try {
       const perfilAluno = await SecureStore.getItemAsync("perfil_aluno");
@@ -84,7 +85,7 @@ const LoginScreen = () => {
         const dadosAluno = JSON.parse(perfilAluno);
         if (
           dadosAluno.email === emailFormatado &&
-          dadosAluno.documento === password
+          dadosAluno.documento === senhaFormatada
         ) {
           setIsLoading(false);
           navigation.replace("AlunoTabs" as any);
@@ -93,14 +94,19 @@ const LoginScreen = () => {
       }
 
       await authService.getCSRF();
-      const response = await authService.requestLogin(emailFormatado, password);
+      const response = await authService.requestLogin(
+        emailFormatado,
+        senhaFormatada,
+      );
 
       setIsLoading(false);
       switchViewAnimada("2fa");
     } catch (error: any) {
       setIsLoading(false);
       const mensagemErro =
-        error.response?.data?.message || "E-mail ou senha incorretos.";
+        error.response?.data?.message ||
+        error.message ||
+        "Erro de conexão com o servidor.";
       Alert.alert(
         "Acesso Negado",
         `Não foi possível entrar.\n\nDetalhe: ${mensagemErro}`,
@@ -128,7 +134,8 @@ const LoginScreen = () => {
       navigation.replace("MainTabs");
     } catch (error: any) {
       setIsLoading(false);
-      const mensagemErro = error.response?.data?.message || "Código inválido.";
+      const mensagemErro =
+        error.response?.data?.message || error.message || "Código inválido.";
       Alert.alert("Erro na Validação", mensagemErro);
     }
   };
@@ -150,7 +157,7 @@ const LoginScreen = () => {
               style={styles.input}
               placeholder="E-mail Institucional"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => setEmail(text.trim().toLowerCase())}
               keyboardType="email-address"
               autoCapitalize="none"
               placeholderTextColor="#999"
@@ -169,7 +176,7 @@ const LoginScreen = () => {
               style={styles.input}
               placeholder="Senha"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => setPassword(text.trim())}
               secureTextEntry={!showPassword}
               placeholderTextColor="#999"
               editable={!isLoading}

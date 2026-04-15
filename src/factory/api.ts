@@ -8,7 +8,6 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Origin': 'app://agenda-fatec' 
   }
 });
 
@@ -19,25 +18,6 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-api.interceptors.response.use(
-  (response) => {
-    const setCookieHeader = response.headers['set-cookie'];
-    if (setCookieHeader) {
-      setCookieHeader.forEach((cookie) => {
-        if (cookie.includes('XSRF-TOKEN=')) {
-          const csrfToken = cookie.split(';')[0].split('=')[1];
-          api.defaults.headers.common['X-XSRF-TOKEN'] = csrfToken;
-          api.defaults.headers.common['X-CSRF-Token'] = csrfToken; 
-        }
-      });
-    }
-    return response;
   },
   (error) => {
     return Promise.reject(error);
