@@ -18,7 +18,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   EventDetail: { evento: Evento };
   Scanner: { eventId: string; eventName: string };
-  AttendanceList: { evento: Evento };
+  AttendanceList: { eventId: string | number };
   CreateEvent: undefined;
   ManageUsers: undefined;
   ManageCategories: undefined;

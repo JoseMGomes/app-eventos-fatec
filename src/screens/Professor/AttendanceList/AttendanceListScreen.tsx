@@ -6,61 +6,75 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRoute } from "@react-navigation/native";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AttendanceListScreen.styles";
+import { participantService } from "../../../services/participantService";
 
 const AttendanceListScreen = () => {
+  const route = useRoute();
+  const { eventId } = (route.params as { eventId?: number | string }) || {};
   const [pesquisa, setPesquisa] = useState("");
   const [alunos, setAlunos] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      const inscritosNoBancoDeDados = [
-        { id: "1", nome: "José Lucas Gomes", ra: "111222333", presente: false },
-        {
-          id: "2",
-          nome: "Guilherme Francisco",
-          ra: "444555666",
-          presente: true,
-        },
-        { id: "3", nome: "Ana Silva Costa", ra: "777888999", presente: false },
-        {
-          id: "4",
-          nome: "Carlos Eduardo Oliveira",
-          ra: "123123123",
-          presente: false,
-        },
-        {
-          id: "5",
-          nome: "Beatriz Souza Mendes",
-          ra: "456456456",
-          presente: true,
-        },
-      ];
-      setAlunos(inscritosNoBancoDeDados);
+    if (eventId) {
+      carregarParticipantes();
+    } else {
       setCarregando(false);
-    }, 800);
-  }, []);
+      Alert.alert("Atenção", "ID do Evento não fornecido.");
+    }
+  }, [eventId]);
 
-  const alternarPresenca = (id: string) => {
-    setAlunos((estadoAnterior) =>
-      estadoAnterior.map((aluno) =>
-        aluno.id === id ? { ...aluno, presente: !aluno.presente } : aluno,
-      ),
-    );
+  const carregarParticipantes = async () => {
+    setCarregando(true);
+    try {
+      const response = await participantService.getByEventId(eventId!);
+      setAlunos(response.data);
+    } catch (error) {
+      console.warn("Erro ao carregar participantes:", error);
+      Alert.alert("Erro", "Não foi possível carregar a lista de inscritos.");
+    } finally {
+      setCarregando(false);
+    }
   };
 
-  const alunosFiltrados = alunos.filter(
-    (aluno) =>
-      aluno.nome.toLowerCase().includes(pesquisa.toLowerCase()) ||
-      aluno.ra.includes(pesquisa),
-  );
+  const alternarPresenca = async (aluno: any) => {
+    const novoStatus = !aluno.isPresent;
+    setAlunos((estadoAnterior) =>
+      estadoAnterior.map((a) =>
+        a.id === aluno.id ? { ...a, isPresent: novoStatus } : a,
+      ),
+    );
+
+    try {
+      await participantService.togglePresence(aluno.id, novoStatus);
+    } catch (error) {
+      setAlunos((estadoAnterior) =>
+        estadoAnterior.map((a) =>
+          a.id === aluno.id ? { ...a, isPresent: aluno.isPresent } : a,
+        ),
+      );
+      Alert.alert(
+        "Erro",
+        "Não foi possível salvar a presença. Tente novamente.",
+      );
+    }
+  };
+
+  const alunosFiltrados = alunos.filter((aluno) => {
+    const nome = aluno.name?.toLowerCase() || "";
+    const ra = aluno.ra?.toLowerCase() || "";
+    const termo = pesquisa.toLowerCase();
+    return nome.includes(termo) || ra.includes(termo);
+  });
 
   const totalInscritos = alunos.length;
-  const totalPresentes = alunos.filter((a) => a.presente).length;
+  const totalPresentes = alunos.filter((a) => a.isPresent).length;
   const percentagem =
     totalInscritos > 0
       ? Math.round((totalPresentes / totalInscritos) * 100)
@@ -71,38 +85,38 @@ const AttendanceListScreen = () => {
       <View
         style={[
           styles.avatarContainer,
-          { backgroundColor: item.presente ? "#E8F5E9" : "#F5F5F5" },
+          { backgroundColor: item.isPresent ? "#E8F5E9" : "#F5F5F5" },
         ]}
       >
         <MaterialCommunityIcons
-          name={item.presente ? "account-check" : "account"}
+          name={item.isPresent ? "account-check" : "account"}
           size={24}
-          color={item.presente ? "#27AE60" : COLORS.textoSecundario}
+          color={item.isPresent ? "#27AE60" : COLORS.textoSecundario}
         />
       </View>
 
       <View style={styles.studentInfo}>
-        <Text style={styles.studentName}>{item.nome}</Text>
-        <Text style={styles.studentRa}>RA: {item.ra}</Text>
+        <Text style={styles.studentName}>{item.name}</Text>
+        <Text style={styles.studentRa}>RA: {item.ra || "Não informado"}</Text>
       </View>
 
       <TouchableOpacity
         style={{ alignItems: "center", padding: 5 }}
-        onPress={() => alternarPresenca(item.id)}
+        onPress={() => alternarPresenca(item)}
         activeOpacity={0.7}
       >
         <MaterialCommunityIcons
-          name={item.presente ? "checkbox-marked" : "checkbox-blank-outline"}
+          name={item.isPresent ? "checkbox-marked" : "checkbox-blank-outline"}
           size={32}
-          color={item.presente ? "#27AE60" : COLORS.textoSecundario}
+          color={item.isPresent ? "#27AE60" : COLORS.textoSecundario}
         />
         <Text
           style={[
             styles.statusText,
-            { color: item.presente ? "#27AE60" : COLORS.textoSecundario },
+            { color: item.isPresent ? "#27AE60" : COLORS.textoSecundario },
           ]}
         >
-          {item.presente ? "PRESENTE" : "FALTOU"}
+          {item.isPresent ? "PRESENTE" : "FALTOU"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -111,7 +125,7 @@ const AttendanceListScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Presença Manual</Text>
+        <Text style={styles.title}>Lista de Presença</Text>
 
         <View style={styles.progressSection}>
           <View style={styles.statsContainer}>
@@ -171,7 +185,7 @@ const AttendanceListScreen = () => {
       ) : (
         <FlatList
           data={alunosFiltrados}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
@@ -183,7 +197,9 @@ const AttendanceListScreen = () => {
                 marginTop: 20,
               }}
             >
-              Nenhum aluno encontrado com esse nome ou RA.
+              {pesquisa
+                ? "Nenhum aluno encontrado com esse nome ou RA."
+                : "Nenhum participante inscrito."}
             </Text>
           }
         />

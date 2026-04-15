@@ -11,7 +11,6 @@ import { useRoute, RouteProp } from "@react-navigation/native";
 import {
   RootStackParamList,
   AppNavigationProp,
-  Evento,
 } from "../../../navigation/types";
 import { styles } from "./EventDetail.style";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -48,6 +47,7 @@ const EventDetailScreen = ({ navigation }: Props) => {
   const { evento } = route.params;
 
   const formatarData = (dataISO: string) => {
+    if (!dataISO) return "Data não informada";
     const dataObj = new Date(dataISO);
     const dia = dataObj.toLocaleDateString("pt-BR", { timeZone: "UTC" });
     const hora = dataObj.toLocaleTimeString("pt-BR", {
@@ -83,22 +83,22 @@ const EventDetailScreen = ({ navigation }: Props) => {
           <InfoRow
             icon="map-marker-outline"
             label="Localização"
-            value={evento.local}
+            value={evento.local || "A definir"}
           />
           <InfoRow
             icon="account-tie"
             label="Palestrante"
-            value={evento.palestrante}
+            value={evento.palestrante || "Não informado"}
           />
           <InfoRow
             icon="book-open-variant"
             label="Curso Destinado"
-            value={evento.curso}
+            value={evento.curso || "Todos os cursos"}
           />
           <InfoRow
             icon="school-outline"
             label="Semestre"
-            value={evento.semestre}
+            value={evento.semestre || "Todos"}
           />
 
           <InfoRow
@@ -114,7 +114,7 @@ const EventDetailScreen = ({ navigation }: Props) => {
           <InfoRow
             icon="text-box-outline"
             label="Descrição"
-            value={evento.descricao}
+            value={evento.descricao || "Sem descrição disponível."}
           />
 
           <View style={styles.buttonContainer}>
@@ -137,10 +137,11 @@ const EventDetailScreen = ({ navigation }: Props) => {
                 Painel de Check-in (Palavra/QR)
               </Text>
             </TouchableOpacity>
+            
             <TouchableOpacity
               style={[styles.actionButton, styles.secondaryButton]}
               activeOpacity={0.8}
-              onPress={() => navigation.navigate("AttendanceList", { evento })}
+              onPress={() => navigation.navigate("AttendanceList", { eventId: evento.id })}
             >
               <MaterialCommunityIcons
                 name="clipboard-check-outline"

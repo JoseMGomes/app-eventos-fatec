@@ -1,14 +1,14 @@
-import { api } from '../factory/api';
-import { authService } from './authService';
+import { api } from "../factory/api";
+import { authService } from "./authService";
 
 export const courseService = {
   getAll: async () => {
     try {
-      return await api.get('/courses');
+      return await api.get("/courses");
     } catch (error: any) {
       if (error.response && error.response.status === 401) {
-        await authService.getCSRF(); 
-        return await api.get('/courses');
+        await authService.getCSRF();
+        return await api.get("/courses");
       }
       throw error;
     }
@@ -16,7 +16,7 @@ export const courseService = {
 
   create: async (dados: { name: string }) => {
     await authService.getCSRF();
-    return await api.post('/courses/create', dados);
+    return await api.post("/courses/create", dados);
   },
 
   update: async (id: string | number, dados: { name: string }) => {
@@ -27,5 +27,5 @@ export const courseService = {
   delete: async (id: string | number) => {
     await authService.getCSRF();
     return await api.delete(`/courses/delete/${id}`);
-  }
+  },
 };

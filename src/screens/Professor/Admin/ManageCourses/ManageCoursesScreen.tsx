@@ -12,7 +12,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageCoursesScreen.styles";
-import { courseService } from "../../../../services/courseService"; 
+import { courseService } from "../../../../services/courseService";
 
 const formatarData = (dataIso: string) => {
   if (!dataIso) return "--/--/----";
@@ -59,7 +59,7 @@ const ManageCoursesScreen = () => {
 
   const abrirModalEdicao = (curso: any) => {
     setCursoEmEdicao(curso.id);
-    setNomeCurso(curso.name); 
+    setNomeCurso(curso.name);
     setModalVisible(true);
   };
 
@@ -87,7 +87,7 @@ const ManageCoursesScreen = () => {
       }
 
       fecharModal();
-      carregarCursos(); 
+      carregarCursos();
     } catch (error: any) {
       const msg =
         error.response?.data?.message || "Ocorreu um erro no servidor.";
