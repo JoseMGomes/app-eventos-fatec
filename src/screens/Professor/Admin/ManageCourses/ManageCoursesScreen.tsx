@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,60 +7,49 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageCoursesScreen.styles";
+import { courseService } from "../../../../services/courseService"; 
 
-const MOCK_CURSOS = [
-  {
-    id: "1",
-    nome: "Análise e Desenvolvimento de Sistemas ( ADS )",
-    criadoEm: "04/11/2025 - 18:29:44",
-    editadoEm: "04/11/2025 - 18:29:44",
-  },
-  {
-    id: "2",
-    nome: "Análise e Desenvolvimento de Sistemas ( ADS-AMS )",
-    criadoEm: "30/09/2025 - 16:27:32",
-    editadoEm: "08/11/2025 - 11:41:58",
-  },
-  {
-    id: "3",
-    nome: "Gestão da Tecnologia da Informação",
-    criadoEm: "30/09/2025 - 16:27:42",
-    editadoEm: "30/09/2025 - 16:28:03",
-  },
-  {
-    id: "4",
-    nome: "Gestão de Eventos",
-    criadoEm: "30/09/2025 - 16:27:51",
-    editadoEm: "30/09/2025 - 16:27:51",
-  },
-  {
-    id: "5",
-    nome: "Gestão Empresarial",
-    criadoEm: "30/09/2025 - 16:27:37",
-    editadoEm: "30/09/2025 - 16:27:56",
-  },
-  {
-    id: "6",
-    nome: "Mecatrônica Industrial",
-    criadoEm: "30/09/2025 - 16:27:46",
-    editadoEm: "30/09/2025 - 16:28:07",
-  },
-  {
-    id: "7",
-    nome: "Processos Gerenciais - AMS",
-    criadoEm: "08/11/2025 - 11:41:37",
-    editadoEm: "08/11/2025 - 11:41:37",
-  },
-];
+const formatarData = (dataIso: string) => {
+  if (!dataIso) return "--/--/----";
+  const data = new Date(dataIso);
+  const dia = String(data.getDate()).padStart(2, "0");
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const ano = data.getFullYear();
+  const horas = String(data.getHours()).padStart(2, "0");
+  const min = String(data.getMinutes()).padStart(2, "0");
+  const seg = String(data.getSeconds()).padStart(2, "0");
+  return `${dia}/${mes}/${ano} - ${horas}:${min}:${seg}`;
+};
 
 const ManageCoursesScreen = () => {
+  const [cursos, setCursos] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [nomeCurso, setNomeCurso] = useState("");
   const [cursoEmEdicao, setCursoEmEdicao] = useState<string | null>(null);
+
+  useEffect(() => {
+    carregarCursos();
+  }, []);
+
+  const carregarCursos = async () => {
+    setIsLoading(true);
+    try {
+      const response = await courseService.getAll();
+      setCursos(response.data);
+    } catch (error) {
+      console.warn("Erro ao carregar cursos:", error);
+      Alert.alert("Erro", "Não foi possível carregar a lista de cursos.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const abrirModalCriacao = () => {
     setCursoEmEdicao(null);
@@ -70,7 +59,7 @@ const ManageCoursesScreen = () => {
 
   const abrirModalEdicao = (curso: any) => {
     setCursoEmEdicao(curso.id);
-    setNomeCurso(curso.nome);
+    setNomeCurso(curso.name); 
     setModalVisible(true);
   };
 
@@ -80,28 +69,64 @@ const ManageCoursesScreen = () => {
     setCursoEmEdicao(null);
   };
 
-  const handleSalvarCurso = () => {
+  const handleSalvarCurso = async () => {
     if (!nomeCurso.trim()) {
       Alert.alert("Atenção", "Por favor, insira o nome do curso.");
       return;
     }
 
-    if (cursoEmEdicao) {
-      Alert.alert(
-        "Sucesso",
-        `Curso atualizado para "${nomeCurso}" com sucesso!`,
-      );
-    } else {
-      Alert.alert("Sucesso", `Curso "${nomeCurso}" criado com sucesso!`);
-    }
+    setIsSaving(true);
 
-    fecharModal();
+    try {
+      if (cursoEmEdicao) {
+        await courseService.update(cursoEmEdicao, { name: nomeCurso.trim() });
+        Alert.alert("Sucesso", "Curso atualizado com sucesso!");
+      } else {
+        await courseService.create({ name: nomeCurso.trim() });
+        Alert.alert("Sucesso", "Novo curso criado com sucesso!");
+      }
+
+      fecharModal();
+      carregarCursos(); 
+    } catch (error: any) {
+      const msg =
+        error.response?.data?.message || "Ocorreu um erro no servidor.";
+      Alert.alert("Erro", `Não foi possível salvar o curso.\nDetalhe: ${msg}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = (curso: any) => {
+    Alert.alert(
+      "Confirmar exclusão",
+      `Deseja realmente remover o curso ${curso.name}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sim, excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              await courseService.delete(curso.id);
+              Alert.alert("Excluído", "Curso removido com sucesso.");
+              carregarCursos();
+            } catch (error: any) {
+              setIsLoading(false);
+              const msg = error.response?.data?.message || "Erro ao excluir.";
+              Alert.alert("Erro", msg);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={styles.courseCard}>
       <View style={styles.courseInfo}>
-        <Text style={styles.courseName}>{item.nome}</Text>
+        <Text style={styles.courseName}>{item.name}</Text>
 
         <View style={styles.dateInfo}>
           <MaterialCommunityIcons
@@ -109,7 +134,9 @@ const ManageCoursesScreen = () => {
             size={14}
             color={COLORS.textoSecundario}
           />
-          <Text style={styles.dateText}>Criado: {item.criadoEm}</Text>
+          <Text style={styles.dateText}>
+            Criado: {formatarData(item.createdAt)}
+          </Text>
         </View>
 
         <View style={styles.dateInfo}>
@@ -118,7 +145,9 @@ const ManageCoursesScreen = () => {
             size={14}
             color={COLORS.textoSecundario}
           />
-          <Text style={styles.dateText}>Editado: {item.editadoEm}</Text>
+          <Text style={styles.dateText}>
+            Editado: {formatarData(item.updatedAt)}
+          </Text>
         </View>
       </View>
 
@@ -130,11 +159,7 @@ const ManageCoursesScreen = () => {
             color={COLORS.textoSecundario}
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert("Excluir", `Deseja remover o curso ${item.nome}?`)
-          }
-        >
+        <TouchableOpacity onPress={() => handleDelete(item)}>
           <MaterialCommunityIcons
             name="trash-can"
             size={24}
@@ -150,20 +175,39 @@ const ManageCoursesScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Cursos ({MOCK_CURSOS.length})</Text>
+        <Text style={styles.title}>Cursos ({cursos.length})</Text>
         <TouchableOpacity style={styles.addButton} onPress={abrirModalCriacao}>
           <MaterialCommunityIcons name="plus" size={20} color={COLORS.branco} />
           <Text style={styles.addButtonText}>Criar novo</Text>
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={MOCK_CURSOS}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
+        </View>
+      ) : (
+        <FlatList
+          data={cursos}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text
+              style={{
+                textAlign: "center",
+                color: COLORS.textoSecundario,
+                marginTop: 20,
+              }}
+            >
+              Nenhum curso cadastrado.
+            </Text>
+          }
+        />
+      )}
 
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -179,7 +223,7 @@ const ManageCoursesScreen = () => {
                   {isEditando ? "Editar curso" : "Criar novo curso"}
                 </Text>
               </View>
-              <TouchableOpacity onPress={fecharModal}>
+              <TouchableOpacity onPress={fecharModal} disabled={isSaving}>
                 <MaterialCommunityIcons
                   name="close-circle-outline"
                   size={28}
@@ -195,17 +239,23 @@ const ManageCoursesScreen = () => {
                 placeholder="Ex: Gestão Financeira"
                 value={nomeCurso}
                 onChangeText={setNomeCurso}
+                editable={!isSaving}
                 autoFocus
               />
             </View>
 
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
               onPress={handleSalvarCurso}
+              disabled={isSaving}
             >
-              <Text style={styles.submitButtonText}>
-                {isEditando ? "Salvar Alterações" : "Criar"}
-              </Text>
+              {isSaving ? (
+                <ActivityIndicator color={COLORS.branco} />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {isEditando ? "Salvar Alterações" : "Criar"}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>

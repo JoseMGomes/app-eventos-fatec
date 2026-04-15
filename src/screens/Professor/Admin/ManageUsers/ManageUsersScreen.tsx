@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,109 +7,181 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageUsersScreen.styles";
+import { userService } from "../../../../services/userService";
 
-const MOCK_USUARIOS = [
-  {
-    id: "1",
-    nome: "Vinicius Leal",
-    email: "vinicius.leal@fatec.sp.gov.br",
-    nivel: "ADMIN",
-  },
-  {
-    id: "2",
-    nome: "José Lucas",
-    email: "jose.gomes35@fatec.sp.gov.br",
-    nivel: "ADMIN",
-  },
-  {
-    id: "3",
-    nome: "Sergio Salgado",
-    email: "sergio.salgado@fatec.sp.gov.br",
-    nivel: "ADMIN",
-  },
-  {
-    id: "4",
-    nome: "Guilherme Pereira",
-    email: "guilherme.pereira@fatec.sp.gov.br",
-    nivel: "ADMIN",
-  },
-  {
-    id: "5",
-    nome: "Patrícia Silva",
-    email: "patricia.silva98@fatec.sp.gov.br",
-    nivel: "COORDENADOR",
-  },
+const OPCOES_NIVEL = [
+  { label: "Auxiliar Docente", value: "AUXILIAR" },
+  { label: "Administrador", value: "ADMIN" },
+  { label: "Coordenador", value: "COORDENADOR" },
 ];
-
-const NIVEIS = ["Auxiliar Docente", "Administrador", "Coordenador"];
 
 const getRoleColor = (role: string) => {
   switch (role) {
     case "ADMIN":
-    case "Administrador":
-      return "#800000"; 
+      return "#800000";
     case "COORDENADOR":
-    case "Coordenador":
-      return "#E67E22"; 
+      return "#E67E22";
     default:
-      return "#2980B9"; 
+      return "#2980B9";
   }
 };
 
-const ManageUsersScreen = () => {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [mostrarSenha, setMostrarSenha] = useState(false);
+const getRoleLabel = (role: string) => {
+  const enc = OPCOES_NIVEL.find((o) => o.value === role);
+  return enc ? enc.label : "Auxiliar Docente";
+};
 
+const ManageUsersScreen = () => {
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [usuarioEmEdicao, setUsuarioEmEdicao] = useState<string | null>(null);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [nivelSelecionado, setNivelSelecionado] = useState("Auxiliar Docente");
+  const [nivelSelecionado, setNivelSelecionado] = useState("AUXILIAR");
 
-  const handleCriarUsuario = () => {
-    if (!nome || !email || !senha) {
-      Alert.alert("Atenção", "Preencha todos os campos obrigatórios.");
-      return;
+  useEffect(() => {
+    carregarUsuarios();
+  }, []);
+
+  const carregarUsuarios = async () => {
+    setIsLoading(true);
+    try {
+      const response = await userService.getAll();
+      setUsuarios(response.data);
+    } catch (error) {
+      console.warn("Erro ao carregar usuários:", error);
+      Alert.alert("Erro", "Não foi possível carregar a lista de usuários.");
+    } finally {
+      setIsLoading(false);
     }
-    Alert.alert("Sucesso", "Usuário criado com sucesso!");
-    setModalVisible(false);
+  };
+
+  const abrirModalCriacao = () => {
+    setUsuarioEmEdicao(null);
     setNome("");
     setEmail("");
     setSenha("");
-    setNivelSelecionado("Auxiliar Docente");
+    setNivelSelecionado("AUXILIAR");
+    setMostrarSenha(false);
+    setModalVisible(true);
+  };
+
+  const abrirModalEdicao = (user: any) => {
+    setUsuarioEmEdicao(user.id);
+    setNome(user.name);
+    setEmail(user.email);
+    setSenha("");
+    setNivelSelecionado(user.role);
+    setModalVisible(true);
+  };
+
+  const fecharModal = () => {
+    setModalVisible(false);
+  };
+
+  const handleSalvarUsuario = async () => {
+    if (!nome.trim() || !email.trim()) {
+      Alert.alert("Atenção", "Preencha os campos de Nome e E-mail.");
+      return;
+    }
+    if (!usuarioEmEdicao && !senha.trim()) {
+      Alert.alert("Atenção", "A senha é obrigatória para novos usuários.");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      if (usuarioEmEdicao) {
+        await userService.update(usuarioEmEdicao, {
+          name: nome.trim(),
+          email: email.trim().toLowerCase(),
+          role: nivelSelecionado,
+        });
+        Alert.alert("Sucesso", "Usuário atualizado!");
+      } else {
+        await userService.create({
+          name: nome.trim(),
+          email: email.trim().toLowerCase(),
+          password: senha,
+          role: nivelSelecionado,
+        });
+        Alert.alert("Sucesso", "Novo usuário criado!");
+      }
+
+      fecharModal();
+      carregarUsuarios();
+    } catch (error: any) {
+      const msg =
+        error.response?.data?.message || "Ocorreu um erro no servidor.";
+      Alert.alert(
+        "Erro",
+        `Não foi possível salvar o usuário.\nDetalhe: ${msg}`,
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = (user: any) => {
+    Alert.alert(
+      "Confirmar exclusão",
+      `Deseja realmente remover o usuário ${user.name}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sim, excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              await userService.delete(user.id);
+              Alert.alert("Excluído", "Usuário removido com sucesso.");
+              carregarUsuarios();
+            } catch (error: any) {
+              setIsLoading(false);
+              const msg = error.response?.data?.message || "Erro ao excluir.";
+              Alert.alert("Erro", msg);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={styles.userCard}>
-      <Text style={styles.userName}>{item.nome}</Text>
+      <Text style={styles.userName}>{item.name}</Text>
       <Text style={styles.userEmail}>{item.email}</Text>
 
       <View style={styles.cardFooter}>
         <View
           style={[
             styles.roleBadge,
-            { backgroundColor: getRoleColor(item.nivel) },
+            { backgroundColor: getRoleColor(item.role) },
           ]}
         >
-          <Text style={styles.roleText}>{item.nivel}</Text>
+          <Text style={styles.roleText}>{getRoleLabel(item.role)}</Text>
         </View>
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity onPress={() => Alert.alert("Editar", item.nome)}>
+          <TouchableOpacity onPress={() => abrirModalEdicao(item)}>
             <MaterialCommunityIcons
               name="pencil"
               size={22}
               color={COLORS.textoSecundario}
             />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert("Excluir", `Deseja remover ${item.nome}?`)
-            }
-          >
+          <TouchableOpacity onPress={() => handleDelete(item)}>
             <MaterialCommunityIcons
               name="trash-can"
               size={22}
@@ -121,14 +193,13 @@ const ManageUsersScreen = () => {
     </View>
   );
 
+  const isEditando = usuarioEmEdicao !== null;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Usuários ({MOCK_USUARIOS.length})</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
+        <Text style={styles.title}>Usuários ({usuarios.length})</Text>
+        <TouchableOpacity style={styles.addButton} onPress={abrirModalCriacao}>
           <MaterialCommunityIcons
             name="account-plus"
             size={20}
@@ -138,13 +209,32 @@ const ManageUsersScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={MOCK_USUARIOS}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
+        </View>
+      ) : (
+        <FlatList
+          data={usuarios}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text
+              style={{
+                textAlign: "center",
+                color: COLORS.textoSecundario,
+                marginTop: 20,
+              }}
+            >
+              Nenhum usuário encontrado.
+            </Text>
+          }
+        />
+      )}
 
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -152,13 +242,15 @@ const ManageUsersScreen = () => {
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleContainer}>
                 <MaterialCommunityIcons
-                  name="account-plus"
+                  name={isEditando ? "account-edit" : "account-plus"}
                   size={28}
                   color={COLORS.textoPrincipal}
                 />
-                <Text style={styles.modalTitle}>Criar novo usuário</Text>
+                <Text style={styles.modalTitle}>
+                  {isEditando ? "Editar Usuário" : "Criar novo usuário"}
+                </Text>
               </View>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity onPress={fecharModal} disabled={isSaving}>
                 <MaterialCommunityIcons
                   name="close-circle-outline"
                   size={28}
@@ -175,6 +267,7 @@ const ManageUsersScreen = () => {
                   placeholder="Ex: João Silva"
                   value={nome}
                   onChangeText={setNome}
+                  editable={!isSaving}
                 />
               </View>
             </View>
@@ -189,52 +282,58 @@ const ManageUsersScreen = () => {
                   autoCapitalize="none"
                   value={email}
                   onChangeText={setEmail}
+                  editable={!isSaving}
                 />
               </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Senha</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="********"
-                  secureTextEntry={!mostrarSenha}
-                  value={senha}
-                  onChangeText={setSenha}
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setMostrarSenha(!mostrarSenha)}
-                >
-                  <MaterialCommunityIcons
-                    name={mostrarSenha ? "eye-off" : "eye"}
-                    size={22}
-                    color={COLORS.vermelhoPrincipal}
+            {!isEditando && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Senha</Text>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="********"
+                    secureTextEntry={!mostrarSenha}
+                    value={senha}
+                    onChangeText={setSenha}
+                    editable={!isSaving}
                   />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setMostrarSenha(!mostrarSenha)}
+                  >
+                    <MaterialCommunityIcons
+                      name={mostrarSenha ? "eye-off" : "eye"}
+                      size={22}
+                      color={COLORS.vermelhoPrincipal}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            )}
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Nível de usuário</Text>
               <View style={styles.rolesContainer}>
-                {NIVEIS.map((nivel) => (
+                {OPCOES_NIVEL.map((opcao) => (
                   <TouchableOpacity
-                    key={nivel}
+                    key={opcao.value}
                     style={[
                       styles.roleChip,
-                      nivelSelecionado === nivel && styles.roleChipActive,
+                      nivelSelecionado === opcao.value && styles.roleChipActive,
                     ]}
-                    onPress={() => setNivelSelecionado(nivel)}
+                    onPress={() => setNivelSelecionado(opcao.value)}
+                    disabled={isSaving}
                   >
                     <Text
                       style={[
                         styles.roleChipText,
-                        nivelSelecionado === nivel && styles.roleChipTextActive,
+                        nivelSelecionado === opcao.value &&
+                          styles.roleChipTextActive,
                       ]}
                     >
-                      {nivel}
+                      {opcao.label}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -242,10 +341,17 @@ const ManageUsersScreen = () => {
             </View>
 
             <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleCriarUsuario}
+              style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
+              onPress={handleSalvarUsuario}
+              disabled={isSaving}
             >
-              <Text style={styles.submitButtonText}>Criar</Text>
+              {isSaving ? (
+                <ActivityIndicator color={COLORS.branco} />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {isEditando ? "Salvar Alterações" : "Criar Usuário"}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
