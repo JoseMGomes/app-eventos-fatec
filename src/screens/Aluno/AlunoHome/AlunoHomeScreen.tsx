@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,45 +6,61 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as SecureStore from "expo-secure-store";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoHomeScreen.styles";
-
-const EVENTOS_MOCK = [
-  {
-    id: "1",
-    nome: "Semana da Tecnologia 2026",
-    data: "2026-04-10T19:00:00Z",
-    local: "Auditório Principal",
-    categoria: "Tecnologia",
-    imagemUrl:
-      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070&auto=format&fit=crop",
-  },
-  {
-    id: "2",
-    nome: "Workshop de React Native",
-    data: "2026-04-15T14:00:00Z",
-    local: "Laboratório 3",
-    categoria: "Minicurso",
-    imagemUrl:
-      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070&auto=format&fit=crop",
-  },
-  {
-    id: "3",
-    nome: "Palestra: O Futuro da IA",
-    data: "2026-04-20T20:00:00Z",
-    local: "Auditório 2",
-    categoria: "Palestra",
-    imagemUrl:
-      "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=2070&auto=format&fit=crop",
-  },
-];
+import { eventService } from "../../../services/eventService";
 
 const AlunoHomeScreen = () => {
-  const [eventos, setEventos] = useState(EVENTOS_MOCK);
+  const [userName, setUserName] = useState("Aluno");
+  const [eventos, setEventos] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    carregarDados();
+  }, []);
+
+  const carregarDados = async () => {
+    try {
+      const perfilJson = await SecureStore.getItemAsync("perfil_aluno");
+      if (perfilJson) {
+        const perfil = JSON.parse(perfilJson);
+        const primeiroNome = perfil.nome.split(" ")[0]; 
+        setUserName(primeiroNome);
+      }
+
+      const response = await eventService.getPublicEvents();
+    
+      const eventosFormatados = response.data.map((ev: any) => {
+        const pedacoData = ev.startDate ? ev.startDate.split("T")[0] : "";
+        const pedacoHora = ev.startTime ? ev.startTime.split("T")[1] : "00:00:00.000Z";
+        const dataCorrigida = `${pedacoData}T${pedacoHora}`;
+
+        return {
+          id: String(ev.id),
+          nome: ev.name,
+          data: dataCorrigida,
+          local: ev.locationName?.toLowerCase() === "outros" ? ev.customLocation : ev.locationName,
+          categoria: ev.categoryName || "Geral",
+          imagemUrl: ev.imageUrl || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070&auto=format&fit=crop", 
+        };
+      });
+
+      setEventos(eventosFormatados);
+    } catch (error) {
+      console.warn("Erro ao carregar Home do Aluno:", error);
+      Alert.alert("Erro", "Não foi possível carregar os eventos da Fatec.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatarData = (dataISO: string) => {
+    if (!dataISO) return "Data indefinida";
     const dataObj = new Date(dataISO);
     const dia = dataObj.toLocaleDateString("pt-BR", { timeZone: "UTC" });
     const hora = dataObj.toLocaleTimeString("pt-BR", {
@@ -77,13 +93,13 @@ const AlunoHomeScreen = () => {
             size={16}
             color={COLORS.textoSecundario}
           />
-          <Text style={styles.infoText}>{item.local}</Text>
+          <Text style={styles.infoText}>{item.local || "A definir"}</Text>
         </View>
 
         <TouchableOpacity
           style={styles.enrollButton}
           activeOpacity={0.8}
-          onPress={() => alert(`Inscrição solicitada para: ${item.nome}`)}
+          onPress={() => Alert.alert("Oba!", `Vamos preparar a sua inscrição para o evento: ${item.nome}`)}
         >
           <MaterialCommunityIcons
             name="ticket-confirmation-outline"
@@ -98,23 +114,34 @@ const AlunoHomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        translucent
-        backgroundColor="transparent"
-        barStyle="light-content"
-      />
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      
       <View style={styles.header}>
-        <Text style={styles.greeting}>Olá, José Lucas!</Text>
+        <Text style={styles.greeting}>Olá, {userName}!</Text>
         <Text style={styles.subtitle}>Pronto para aprender coisas novas?</Text>
       </View>
+      
       <Text style={styles.sectionTitle}>Próximos Eventos na Fatec</Text>
-      <FlatList
-        data={eventos}
-        keyExtractor={(item) => item.id}
-        renderItem={renderEvento}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+
+      {isLoading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
+          <Text style={{ marginTop: 10, color: COLORS.textoSecundario }}>Buscando eventos...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={eventos}
+          keyExtractor={(item) => item.id}
+          renderItem={renderEvento}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text style={{ textAlign: "center", color: COLORS.textoSecundario, marginTop: 40 }}>
+              Nenhum evento público disponível no momento.
+            </Text>
+          }
+        />
+      )}
     </View>
   );
 };

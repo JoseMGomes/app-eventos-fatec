@@ -3,7 +3,7 @@ import { authService } from "./authService";
 
 export const eventService = {
   getPublicEvents: async () => {
-    return await api.get("/publicAllEvents");
+    return await api.get('/events/publicAllEvents');
   },
 
   getAllAdminEvents: async () => {
