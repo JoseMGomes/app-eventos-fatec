@@ -104,7 +104,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: {
-    color: COLORS.textoSecundario,
+    color: COLORS.vermelhoPrincipal,
     fontSize: 14,
     fontWeight: "500",
   },

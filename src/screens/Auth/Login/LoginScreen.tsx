@@ -19,25 +19,21 @@ import { styles } from "./LoginScreen.styles";
 import { authService } from "../../../services/authService";
 import { saveToken } from "../../../utils/tokenSave";
 
-type ViewState = "login" | "2fa" | "recovery";
+type ViewState = "login" | "2fa" | "recovery" | "student" | "visitor";
 
 const LoginScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [viewState, setViewState] = useState<ViewState>("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code2FA, setCode2FA] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [viewState, setViewState] = useState<ViewState>("login");
+  const [nomeUsuario, setNomeUsuario] = useState("");
+  const [raAluno, setRaAluno] = useState("");
+  const [emailUsuario, setEmailUsuario] = useState("");
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
-
-  const getGreeting = () => {
-    const hora = new Date().getHours();
-    if (hora >= 5 && hora < 12) return "Bom dia";
-    if (hora >= 12 && hora < 18) return "Boa tarde";
-    return "Boa noite";
-  };
 
   const switchViewAnimada = (novaView: ViewState) => {
     Animated.parallel([
@@ -69,7 +65,36 @@ const LoginScreen = () => {
     });
   };
 
-  const handleAcessar = async () => {
+  const handleAcessoLocal = async (tipo: "ALUNO" | "VISITANTE") => {
+    if (
+      !nomeUsuario.trim() ||
+      !emailUsuario.trim() ||
+      (tipo === "ALUNO" && !raAluno.trim())
+    ) {
+      Alert.alert("Atenção", "Preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    setIsLoading(true);
+    const perfil = {
+      nome: nomeUsuario.trim(),
+      email: emailUsuario.trim().toLowerCase(),
+      ra: tipo === "ALUNO" ? raAluno.trim() : null,
+      instituicao: tipo === "VISITANTE" ? "Visitante Externo" : "FATEC",
+      tipo: tipo,
+    };
+
+    try {
+      await SecureStore.setItemAsync("perfil_aluno", JSON.stringify(perfil));
+      setIsLoading(false);
+      navigation.replace("AlunoTabs" as any);
+    } catch (error) {
+      setIsLoading(false);
+      Alert.alert("Erro", "Falha ao criar passaporte local.");
+    }
+  };
+
+  const handleAcessarAdmin = async () => {
     if (!email.includes("@") || !password) {
       Alert.alert("Erro", "Por favor, preencha o e-mail e a senha.");
       return;
@@ -80,25 +105,11 @@ const LoginScreen = () => {
     const senhaFormatada = password.trim();
 
     try {
-      const perfilAluno = await SecureStore.getItemAsync("perfil_aluno");
-      if (perfilAluno) {
-        const dadosAluno = JSON.parse(perfilAluno);
-        if (
-          dadosAluno.email === emailFormatado &&
-          dadosAluno.documento === senhaFormatada
-        ) {
-          setIsLoading(false);
-          navigation.replace("AlunoTabs" as any);
-          return;
-        }
-      }
-
       await authService.getCSRF();
       const response = await authService.requestLogin(
         emailFormatado,
         senhaFormatada,
       );
-
       setIsLoading(false);
       switchViewAnimada("2fa");
     } catch (error: any) {
@@ -119,32 +130,167 @@ const LoginScreen = () => {
       Alert.alert("Erro", "O código deve conter 6 dígitos.");
       return;
     }
-
     setIsLoading(true);
-
     try {
       await authService.getCSRF();
       const response = await authService.login(code2FA);
       if (response.data && response.data.token) {
         await saveToken(response.data.token);
       }
-
       setIsLoading(false);
-      Alert.alert("Sucesso!", "Bem-vindo(a)!");
       navigation.replace("MainTabs");
     } catch (error: any) {
       setIsLoading(false);
-      const mensagemErro =
-        error.response?.data?.message || error.message || "Código inválido.";
-      Alert.alert("Erro na Validação", mensagemErro);
+      Alert.alert(
+        "Erro na Validação",
+        error.response?.data?.message || "Código inválido.",
+      );
     }
   };
 
   const renderFormContent = () => {
+    if (viewState === "student") {
+      return (
+        <>
+          <Text style={styles.cardTitle}>Acesso do Aluno</Text>
+          <View style={styles.inputContainer}>
+            <MaterialCommunityIcons
+              name="account-outline"
+              size={20}
+              color={COLORS.textoSecundario}
+              style={styles.icon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Nome Completo"
+              value={nomeUsuario}
+              onChangeText={setNomeUsuario}
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <MaterialCommunityIcons
+              name="card-account-details-outline"
+              size={20}
+              color={COLORS.textoSecundario}
+              style={styles.icon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Seu RA"
+              value={raAluno}
+              onChangeText={setRaAluno}
+              keyboardType="number-pad"
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <MaterialCommunityIcons
+              name="email-outline"
+              size={20}
+              color={COLORS.textoSecundario}
+              style={styles.icon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="E-mail Institucional"
+              value={emailUsuario}
+              onChangeText={setEmailUsuario}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.mainButton}
+            onPress={() => handleAcessoLocal("ALUNO")}
+          >
+            <Text style={styles.mainButtonText}>Acessar como Aluno</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => switchViewAnimada("visitor")}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Não sou aluno (Visitante)
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => switchViewAnimada("login")}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Sou Professor / Coordenador
+            </Text>
+          </TouchableOpacity>
+        </>
+      );
+    }
+
+    if (viewState === "visitor") {
+      return (
+        <>
+          <Text style={styles.cardTitle}>Acesso Visitante</Text>
+          <Text style={styles.codeHelperText}>
+            Para público externo e convidados.
+          </Text>
+
+          <View style={styles.inputContainer}>
+            <MaterialCommunityIcons
+              name="account-outline"
+              size={20}
+              color={COLORS.textoSecundario}
+              style={styles.icon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Nome Completo"
+              value={nomeUsuario}
+              onChangeText={setNomeUsuario}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <MaterialCommunityIcons
+              name="email-outline"
+              size={20}
+              color={COLORS.textoSecundario}
+              style={styles.icon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="E-mail para contato"
+              value={emailUsuario}
+              onChangeText={(text) =>
+                setEmailUsuario(text.trim().toLowerCase())
+              }
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.mainButton}
+            onPress={() => handleAcessoLocal("VISITANTE")}
+          >
+            <Text style={styles.mainButtonText}>Acessar Eventos</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => switchViewAnimada("student")}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Voltar para Acesso Aluno
+            </Text>
+          </TouchableOpacity>
+        </>
+      );
+    }
+
     if (viewState === "login") {
       return (
         <>
-          <Text style={styles.cardTitle}>Acesse sua conta</Text>
+          <Text style={styles.cardTitle}>Área do Colaborador</Text>
 
           <View style={styles.inputContainer}>
             <MaterialCommunityIcons
@@ -160,11 +306,9 @@ const LoginScreen = () => {
               onChangeText={(text) => setEmail(text.trim().toLowerCase())}
               keyboardType="email-address"
               autoCapitalize="none"
-              placeholderTextColor="#999"
               editable={!isLoading}
             />
           </View>
-
           <View style={styles.inputContainer}>
             <MaterialCommunityIcons
               name="lock-outline"
@@ -178,7 +322,6 @@ const LoginScreen = () => {
               value={password}
               onChangeText={(text) => setPassword(text.trim())}
               secureTextEntry={!showPassword}
-              placeholderTextColor="#999"
               editable={!isLoading}
             />
             <TouchableOpacity
@@ -204,7 +347,7 @@ const LoginScreen = () => {
 
           <TouchableOpacity
             style={styles.mainButton}
-            onPress={handleAcessar}
+            onPress={handleAcessarAdmin}
             activeOpacity={0.8}
             disabled={isLoading}
           >
@@ -216,17 +359,12 @@ const LoginScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={{ alignItems: "center", marginTop: 25 }}
-            onPress={() => navigation.navigate("Register")}
+            style={styles.secondaryButton}
+            onPress={() => switchViewAnimada("student")}
             disabled={isLoading}
           >
-            <Text style={{ color: COLORS.textoSecundario, fontSize: 14 }}>
-              Não tem uma conta?{" "}
-              <Text
-                style={{ color: COLORS.vermelhoPrincipal, fontWeight: "bold" }}
-              >
-                Cadastre-se
-              </Text>
+            <Text style={styles.secondaryButtonText}>
+              Voltar para Acesso de Aluno
             </Text>
           </TouchableOpacity>
         </>
@@ -284,7 +422,7 @@ const LoginScreen = () => {
             onPress={() => switchViewAnimada("login")}
             disabled={isLoading}
           >
-            <Text style={styles.secondaryButtonText}>Voltar para o Login</Text>
+            <Text style={styles.secondaryButtonText}>Voltar</Text>
           </TouchableOpacity>
         </>
       );
@@ -311,7 +449,6 @@ const LoginScreen = () => {
               placeholder="E-mail Institucional"
               keyboardType="email-address"
               autoCapitalize="none"
-              placeholderTextColor="#999"
             />
           </View>
 
@@ -350,12 +487,11 @@ const LoginScreen = () => {
             color={COLORS.branco}
           />
           <Text style={styles.title}>Fatec Eventos</Text>
-          <Text style={styles.subtitle}>
-            {getGreeting()}! Seja muito bem-vindo.
+          <Text style={{ color: "#FFF", opacity: 0.8 }}>
+            Seja muito bem-vindo.
           </Text>
         </View>
       </View>
-
       <View style={styles.formContainer}>
         <Animated.View
           style={[
