@@ -2,6 +2,15 @@ import { api } from "../factory/api";
 import { authService } from "./authService";
 
 export const courseService = {
+  getAllPublic: async () => {
+    try {
+      return await api.get("/courses/publicAllCourses");
+    } catch (error) {
+      console.error("Erro ao buscar cursos públicos:", error);
+      throw error;
+    }
+  },
+
   getAll: async () => {
     try {
       return await api.get("/courses");

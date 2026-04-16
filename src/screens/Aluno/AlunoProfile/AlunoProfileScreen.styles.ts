@@ -1,8 +1,6 @@
 import { StyleSheet } from "react-native";
 import { COLORS } from "../../../styles/colors";
 
-
-
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -42,7 +40,7 @@ export const styles = StyleSheet.create({
   progressPercent: {
     color: COLORS.branco,
     fontSize: 18,
-    fontWeight: 900,
+    fontWeight: "900",
   },
   progressBarBackground: {
     height: 8,
@@ -57,7 +55,7 @@ export const styles = StyleSheet.create({
   },
   formContainer: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 150, 
   },
   sectionTitle: {
     fontSize: 18,
@@ -68,7 +66,6 @@ export const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 15,
   },
-
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
