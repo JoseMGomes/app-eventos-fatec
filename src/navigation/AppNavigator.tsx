@@ -15,6 +15,7 @@ import SettingsScreen from "../screens/Shared/Settings/SettingsScreen";
 import AlunoTabNavigator from "./AlunoTabNavigator";
 import CheckinAlunoScreen from "../screens/Aluno/CheckinAluno/CheckinAlunoScreen";
 import RegisterScreen from "../screens/Auth/Register/RegisterScreen";
+import AlunoEventoDetalhesScreen from "../screens/Aluno/AlunoEventDetail/AlunoEventoDetalhesScreen";
 
 const Stack = createStackNavigator();
 
@@ -108,6 +109,11 @@ const AppNavigator = () => {
           name="Register"
           component={RegisterScreen}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AlunoEventoDetalhes"
+          component={AlunoEventoDetalhesScreen}
+          options={{ title: "Detalhes do Evento" }}
         />
       </Stack.Navigator>
     </NavigationContainer>

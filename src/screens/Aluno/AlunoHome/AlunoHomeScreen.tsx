@@ -14,8 +14,10 @@ import * as SecureStore from "expo-secure-store";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoHomeScreen.styles";
 import { eventService } from "../../../services/eventService";
+import { useNavigation } from "@react-navigation/native";
 
 const AlunoHomeScreen = () => {
+  const navigation = useNavigation<any>();
   const [userName, setUserName] = useState("Aluno");
   const [eventos, setEventos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +56,7 @@ const AlunoHomeScreen = () => {
           imagemUrl:
             ev.imageUrl ||
             "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070&auto=format&fit=crop",
+          ...ev,
         };
       });
 
@@ -79,7 +82,13 @@ const AlunoHomeScreen = () => {
   };
 
   const renderEvento = ({ item }: any) => (
-    <View style={styles.eventCard}>
+    <TouchableOpacity
+      style={styles.eventCard}
+      activeOpacity={0.9}
+      onPress={() =>
+        navigation.navigate("AlunoEventoDetalhes", { evento: item })
+      }
+    >
       <Image source={{ uri: item.imagemUrl }} style={styles.eventImage} />
       <View style={styles.cardContent}>
         <View style={styles.tagContainer}>
@@ -102,26 +111,8 @@ const AlunoHomeScreen = () => {
           />
           <Text style={styles.infoText}>{item.local || "A definir"}</Text>
         </View>
-
-        <TouchableOpacity
-          style={styles.enrollButton}
-          activeOpacity={0.8}
-          onPress={() =>
-            Alert.alert(
-              "Oba!",
-              `Vamos preparar a sua inscrição para o evento: ${item.nome}`,
-            )
-          }
-        >
-          <MaterialCommunityIcons
-            name="ticket-confirmation-outline"
-            size={18}
-            color={COLORS.branco}
-          />
-          <Text style={styles.enrollButtonText}>Garantir Vaga</Text>
-        </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
