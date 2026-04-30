@@ -244,6 +244,7 @@ const ProfileScreen = () => {
             <TextInput
               style={styles.input}
               value={nome}
+              placeholderTextColor="#999"
               onChangeText={setNome}
               placeholder="Seu nome"
             />
@@ -264,6 +265,7 @@ const ProfileScreen = () => {
                 style={styles.input}
                 value={ra}
                 onChangeText={setRa}
+                placeholderTextColor="#999"
                 placeholder="Seu RA"
                 keyboardType="number-pad"
               />
@@ -350,6 +352,7 @@ const ProfileScreen = () => {
               style={styles.input}
               value={telefone}
               onChangeText={setTelefone}
+              placeholderTextColor="#999"
               placeholder="(11) 99999-9999"
               keyboardType="phone-pad"
             />

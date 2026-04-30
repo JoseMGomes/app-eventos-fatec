@@ -265,6 +265,7 @@ const ManageUsersScreen = () => {
                 <TextInput
                   style={styles.input}
                   placeholder="Ex: João Silva"
+                  placeholderTextColor="#999"
                   value={nome}
                   onChangeText={setNome}
                   editable={!isSaving}
@@ -280,6 +281,7 @@ const ManageUsersScreen = () => {
                   placeholder="email@fatec.sp.gov.br"
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  placeholderTextColor="#999"
                   value={email}
                   onChangeText={setEmail}
                   editable={!isSaving}
@@ -294,6 +296,7 @@ const ManageUsersScreen = () => {
                   <TextInput
                     style={styles.input}
                     placeholder="********"
+                    placeholderTextColor="#999"
                     secureTextEntry={!mostrarSenha}
                     value={senha}
                     onChangeText={setSenha}

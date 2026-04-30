@@ -20,17 +20,16 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 20,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: COLORS.branco,
-    marginTop: 10,
-    letterSpacing: 1,
+  logoImage: {
+    width: 270, 
+    height: 90,
+    marginBottom: 10,
   },
   subtitle: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.9)",
     marginTop: 5,
+    letterSpacing: 0.5,
   },
   formContainer: {
     flex: 1,

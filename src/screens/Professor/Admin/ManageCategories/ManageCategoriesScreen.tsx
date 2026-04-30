@@ -12,7 +12,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageCategoriesScreen.styles";
-import { categoryService } from "../../../../services/categoryService"; 
+import { categoryService } from "../../../../services/categoryService";
 
 const ManageCategoriesScreen = () => {
   const [categorias, setCategorias] = useState<any[]>([]);
@@ -20,7 +20,9 @@ const ManageCategoriesScreen = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [nomeCategoria, setNomeCategoria] = useState("");
-  const [categoriaEmEdicao, setCategoriaEmEdicao] = useState<string | null>(null);
+  const [categoriaEmEdicao, setCategoriaEmEdicao] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     carregarCategorias();
@@ -47,7 +49,7 @@ const ManageCategoriesScreen = () => {
 
   const abrirModalEdicao = (categoria: any) => {
     setCategoriaEmEdicao(categoria.id);
-    setNomeCategoria(categoria.name); 
+    setNomeCategoria(categoria.name);
     setModalVisible(true);
   };
 
@@ -73,12 +75,12 @@ const ManageCategoriesScreen = () => {
         await categoryService.create(nomeCategoria.trim());
         Alert.alert("Sucesso", "Categoria criada!");
       }
-      
-      fecharModal();
-      carregarCategorias(); 
 
+      fecharModal();
+      carregarCategorias();
     } catch (error: any) {
-      const msg = error.response?.data?.message || "Ocorreu um erro no servidor.";
+      const msg =
+        error.response?.data?.message || "Ocorreu um erro no servidor.";
       Alert.alert("Erro", `Não foi possível salvar.\nDetalhe: ${msg}`);
     } finally {
       setIsSaving(false);
@@ -93,21 +95,25 @@ const ManageCategoriesScreen = () => {
         { text: "Cancelar", style: "cancel" },
         {
           text: "Sim, excluir",
-          style: "destructive", 
+          style: "destructive",
           onPress: async () => {
             try {
-              setIsLoading(true); 
+              setIsLoading(true);
               await categoryService.delete(categoria.id);
               Alert.alert("Excluída", "Categoria removida com sucesso.");
-              carregarCategorias(); 
+              carregarCategorias();
             } catch (error: any) {
               setIsLoading(false);
-              const msg = error.response?.data?.message || "Ocorreu um erro ao excluir.";
-              Alert.alert("Erro", `Não foi possível excluir a categoria.\nDetalhe: ${msg}`);
+              const msg =
+                error.response?.data?.message || "Ocorreu um erro ao excluir.";
+              Alert.alert(
+                "Erro",
+                `Não foi possível excluir a categoria.\nDetalhe: ${msg}`,
+              );
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -123,22 +129,42 @@ const ManageCategoriesScreen = () => {
         <Text style={styles.categoryName}>{item.name}</Text>
 
         <View style={styles.dateInfo}>
-          <MaterialCommunityIcons name="calendar-plus" size={14} color={COLORS.textoSecundario} />
-          <Text style={styles.dateText}>Criado: {formatarData(item.createdAt)}</Text>
+          <MaterialCommunityIcons
+            name="calendar-plus"
+            size={14}
+            color={COLORS.textoSecundario}
+          />
+          <Text style={styles.dateText}>
+            Criado: {formatarData(item.createdAt)}
+          </Text>
         </View>
 
         <View style={styles.dateInfo}>
-          <MaterialCommunityIcons name="calendar-edit" size={14} color={COLORS.textoSecundario} />
-          <Text style={styles.dateText}>Editado: {formatarData(item.updatedAt)}</Text>
+          <MaterialCommunityIcons
+            name="calendar-edit"
+            size={14}
+            color={COLORS.textoSecundario}
+          />
+          <Text style={styles.dateText}>
+            Editado: {formatarData(item.updatedAt)}
+          </Text>
         </View>
       </View>
 
       <View style={styles.actionsColumn}>
         <TouchableOpacity onPress={() => abrirModalEdicao(item)}>
-          <MaterialCommunityIcons name="pencil" size={24} color={COLORS.textoSecundario} />
+          <MaterialCommunityIcons
+            name="pencil"
+            size={24}
+            color={COLORS.textoSecundario}
+          />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleDelete(item)}>
-          <MaterialCommunityIcons name="trash-can" size={24} color={COLORS.vermelhoPrincipal} />
+          <MaterialCommunityIcons
+            name="trash-can"
+            size={24}
+            color={COLORS.vermelhoPrincipal}
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -151,13 +177,19 @@ const ManageCategoriesScreen = () => {
       <View style={styles.header}>
         <Text style={styles.title}>Categorias ({categorias.length})</Text>
         <TouchableOpacity style={styles.addButton} onPress={abrirModalCriacao}>
-          <MaterialCommunityIcons name="tag-plus" size={20} color={COLORS.branco} />
+          <MaterialCommunityIcons
+            name="tag-plus"
+            size={20}
+            color={COLORS.branco}
+          />
           <Text style={styles.addButtonText}>Criar nova</Text>
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
         </View>
       ) : (
@@ -168,7 +200,13 @@ const ManageCategoriesScreen = () => {
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Text style={{ textAlign: 'center', color: COLORS.textoSecundario, marginTop: 20 }}>
+            <Text
+              style={{
+                textAlign: "center",
+                color: COLORS.textoSecundario,
+                marginTop: 20,
+              }}
+            >
               Nenhuma categoria encontrada.
             </Text>
           }
@@ -203,6 +241,7 @@ const ManageCategoriesScreen = () => {
               <TextInput
                 style={styles.input}
                 placeholder="Ex: Minicurso"
+                placeholderTextColor="#999"
                 value={nomeCategoria}
                 onChangeText={setNomeCategoria}
                 autoFocus

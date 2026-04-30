@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "app-eventos-fatec",
+    "name": "Fatec Eventos",
     "slug": "app-eventos-fatec",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./src/assets/splash-icon.png",
+      "image": "./src/assets/logoFatecBranco.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#B30000"
     },
     "ios": {
       "supportsTablet": true,
@@ -21,10 +21,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./src/assets/android-icon-foreground.png",
-        "backgroundImage": "./src/assets/android-icon-background.png",
-        "monochromeImage": "./src/assets/android-icon-monochrome.png"
+        "backgroundColor": "#B30000",
+        "foregroundImage": "./src/assets/icon.png",
+        "backgroundImage": "./src/assets/icon.png",
+        "monochromeImage": "./src/assets/icon.png"
       },
       "usesCleartextTraffic": true,
       "permissions": [
@@ -34,11 +34,19 @@
       "package": "com.gomess.ze.appeventosfatec"
     },
     "web": {
-      "favicon": "./src/assets/favicon.png"
+      "favicon": "./src/assets/icon.png"
     },
     "plugins": [
       "expo-secure-store",
-      "expo-location"
+      "expo-location",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

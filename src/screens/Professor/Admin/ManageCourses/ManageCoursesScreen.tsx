@@ -237,6 +237,7 @@ const ManageCoursesScreen = () => {
               <TextInput
                 style={styles.input}
                 placeholder="Ex: Gestão Financeira"
+                placeholderTextColor="#999"
                 value={nomeCurso}
                 onChangeText={setNomeCurso}
                 editable={!isSaving}

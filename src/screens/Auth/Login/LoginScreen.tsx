@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -163,6 +164,7 @@ const LoginScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Nome Completo"
+              placeholderTextColor="#999"
               value={nomeUsuario}
               onChangeText={setNomeUsuario}
             />
@@ -177,6 +179,7 @@ const LoginScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Seu RA"
+              placeholderTextColor="#999"
               value={raAluno}
               onChangeText={setRaAluno}
               keyboardType="number-pad"
@@ -192,6 +195,7 @@ const LoginScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="E-mail Institucional"
+              placeholderTextColor="#999"
               value={emailUsuario}
               onChangeText={setEmailUsuario}
               keyboardType="email-address"
@@ -244,6 +248,7 @@ const LoginScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Nome Completo"
+              placeholderTextColor="#999"
               value={nomeUsuario}
               onChangeText={setNomeUsuario}
             />
@@ -259,6 +264,7 @@ const LoginScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="E-mail para contato"
+              placeholderTextColor="#999"
               value={emailUsuario}
               onChangeText={(text) =>
                 setEmailUsuario(text.trim().toLowerCase())
@@ -302,6 +308,7 @@ const LoginScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="E-mail Institucional"
+              placeholderTextColor="#999"
               value={email}
               onChangeText={(text) => setEmail(text.trim().toLowerCase())}
               keyboardType="email-address"
@@ -319,6 +326,7 @@ const LoginScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Senha"
+              placeholderTextColor="#999"
               value={password}
               onChangeText={(text) => setPassword(text.trim())}
               secureTextEntry={!showPassword}
@@ -397,6 +405,7 @@ const LoginScreen = () => {
               value={code2FA}
               onChangeText={setCode2FA}
               keyboardType="number-pad"
+              placeholderTextColor="#999"
               maxLength={6}
               caretHidden={true}
               autoFocus={true}
@@ -481,15 +490,12 @@ const LoginScreen = () => {
     >
       <View style={styles.topBackground}>
         <View style={styles.logoPlaceholder}>
-          <MaterialCommunityIcons
-            name="calendar-check"
-            size={70}
-            color={COLORS.branco}
+          <Image
+            source={require("../../../assets/logoFatecBranco.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
           />
-          <Text style={styles.title}>Fatec Eventos</Text>
-          <Text style={{ color: "#FFF", opacity: 0.8 }}>
-            Seja muito bem-vindo.
-          </Text>
+          <Text style={styles.subtitle}>Seja muito bem-vindo.</Text>
         </View>
       </View>
       <View style={styles.formContainer}>

@@ -212,7 +212,7 @@ const CreateEventScreen = () => {
     if (horaInicio && blocosDeTempo.length > 0) {
       setHoraFim("");
       const minInicio = parseTime(horaInicio);
-      const m0 = minInicio + 30; 
+      const m0 = minInicio + 30;
 
       const slotsFinais = blocosDeTempo.flatMap(({ start, end }) => {
         const s = parseTime(start);
@@ -384,6 +384,7 @@ const CreateEventScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Ex: Hackathon FATEC"
+              placeholderTextColor="#999"
               value={nome}
               onChangeText={setNome}
             />
@@ -438,6 +439,7 @@ const CreateEventScreen = () => {
             <TextInput
               style={[styles.input, { marginTop: -15, marginBottom: 15 }]}
               placeholder="Digite a data (YYYY-MM-DD)"
+              placeholderTextColor="#999"
               value={data}
               onChangeText={setData}
             />
@@ -548,6 +550,7 @@ const CreateEventScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Ex: 50"
+              placeholderTextColor="#999"
               value={limiteInscricoes}
               onChangeText={setLimiteInscricoes}
               keyboardType="numeric"
@@ -559,6 +562,7 @@ const CreateEventScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Ex: Prof. Silva"
+              placeholderTextColor="#999"
               value={palestrante}
               onChangeText={setPalestrante}
             />
@@ -582,6 +586,7 @@ const CreateEventScreen = () => {
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Escreva os detalhes aqui..."
+              placeholderTextColor="#999"
               value={descricao}
               onChangeText={setDescricao}
               multiline

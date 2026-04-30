@@ -142,6 +142,7 @@ const RegisterScreen = () => {
                 value={nome}
                 onChangeText={setNome}
                 placeholder="Digite seu nome"
+                placeholderTextColor="#999"
                 autoCapitalize="words"
               />
             </View>
@@ -164,6 +165,7 @@ const RegisterScreen = () => {
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
+                placeholderTextColor="#999"
                 placeholder={
                   tipoUsuario === "ALUNO"
                     ? "aluno@fatec.sp.gov.br"
@@ -190,6 +192,7 @@ const RegisterScreen = () => {
                 style={styles.input}
                 value={documento}
                 onChangeText={setDocumento}
+                placeholderTextColor="#999"
                 placeholder={
                   tipoUsuario === "ALUNO"
                     ? "Apenas números do RA"
