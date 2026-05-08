@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   FlatList,
   StatusBar,
   Text,
@@ -17,6 +16,7 @@ import { COLORS } from "../../../styles/colors";
 import { styles } from "./HomeScreen.styles";
 import { authService } from "../../../services/authService";
 import { eventService } from "../../../services/eventService";
+import CustomAlert from "../../../components/CustomAlert";
 
 const CATEGORIAS = ["Todos", "Tecnologia", "Gestão", "Geral"];
 
@@ -33,25 +33,56 @@ const HomeScreen = ({ navigation }: Props) => {
   const [userRole, setUserRole] = useState<
     "ADMIN" | "COORDENADOR" | "AUXILIAR" | null
   >(null);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onConfirm?: () => void;
+    textoConfirmar?: string;
+    textoCancelar?: string;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onConfirm?: () => void,
+    textoConfirmar = "OK",
+    textoCancelar = "Cancelar",
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      tipo,
+      onConfirm,
+      textoConfirmar,
+      textoCancelar,
+    });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (e) => {
       e.preventDefault();
-      Alert.alert(
+
+      mostrarAlerta(
         "Confirmar Saída",
         "Tem a certeza de que deseja sair da conta?",
-        [
-          { text: "Não", style: "cancel", onPress: () => {} },
-          {
-            text: "Sim",
-            style: "destructive",
-            onPress: () => {
-              navigation.dispatch(e.data.action);
-            },
-          },
-        ],
+        "aviso",
+        () => {
+          setAlertVisible(false);
+          navigation.dispatch(e.data.action);
+        },
+        "Sim, Sair",
+        "Cancelar",
       );
     });
+
     return unsubscribe;
   }, [navigation]);
 
@@ -89,8 +120,24 @@ const HomeScreen = ({ navigation }: Props) => {
         });
 
         setEventosApi(eventosFormatados);
-      } catch (error) {
+      } catch (error: any) {
         console.warn("Erro ao buscar dados na Home:", error);
+        if (
+          !error.response &&
+          (error.request || error.message === "Network Error")
+        ) {
+          mostrarAlerta(
+            "Sem Conexão",
+            "Não foi possível carregar os eventos. Verifique sua internet.",
+            "erro",
+          );
+        } else {
+          mostrarAlerta(
+            "Erro",
+            "Ocorreu um problema ao buscar a lista de eventos.",
+            "erro",
+          );
+        }
       } finally {
         setIsLoadingEventos(false);
       }
@@ -103,7 +150,6 @@ const HomeScreen = ({ navigation }: Props) => {
     const textoBuscado = busca.toLowerCase();
     const nomeEvento = evento.nome.toLowerCase();
     const passaNaBusca = nomeEvento.includes(textoBuscado);
-
     const passaNaCategoria =
       categoriaSelecionada === "Todos" ||
       evento.categoria === categoriaSelecionada;
@@ -224,6 +270,16 @@ const HomeScreen = ({ navigation }: Props) => {
           <MaterialCommunityIcons name="plus" size={30} color={COLORS.branco} />
         </TouchableOpacity>
       )}
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
+        onConfirm={alertConfig.onConfirm}
+        textoConfirmar={alertConfig.textoConfirmar}
+        textoCancelar={alertConfig.textoCancelar}
+      />
     </View>
   );
 };

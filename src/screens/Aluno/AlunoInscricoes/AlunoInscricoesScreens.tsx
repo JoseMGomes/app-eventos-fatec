@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import { useNavigation } from "@react-navigation/native";
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoIncricoesScreens.styles";
+import CustomAlert from "../../../components/CustomAlert";
 
 const MINHAS_INSCRICOES_MOCK = [
   {
@@ -34,7 +35,25 @@ const MINHAS_INSCRICOES_MOCK = [
 const AlunoInscricoesScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const [inscricoes, setInscricoes] = useState(MINHAS_INSCRICOES_MOCK);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
 
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+  ) => {
+    setAlertConfig({ title, message, tipo });
+    setAlertVisible(true);
+  };
   const formatarData = (dataISO: string) => {
     const dataObj = new Date(dataISO);
     const dia = dataObj.toLocaleDateString("pt-BR", { timeZone: "UTC" });
@@ -153,6 +172,14 @@ const AlunoInscricoesScreen = () => {
             </Text>
           </View>
         }
+      />
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
       />
     </View>
   );

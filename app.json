@@ -17,9 +17,17 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         }
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyBfvikDfi7a0s2rNoZZBkop8ys0jOui6NE"
       }
     },
     "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBfvikDfi7a0s2rNoZZBkop8ys0jOui6NE"
+        }
+      },
       "adaptiveIcon": {
         "backgroundColor": "#B30000",
         "foregroundImage": "./src/assets/icon.png",

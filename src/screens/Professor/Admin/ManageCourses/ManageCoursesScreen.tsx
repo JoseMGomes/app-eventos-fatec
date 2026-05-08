@@ -6,13 +6,13 @@ import {
   FlatList,
   Modal,
   TextInput,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageCoursesScreen.styles";
 import { courseService } from "../../../../services/courseService";
+import CustomAlert from "../../../../components/CustomAlert";
 
 const formatarData = (dataIso: string) => {
   if (!dataIso) return "--/--/----";
@@ -33,6 +33,38 @@ const ManageCoursesScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [nomeCurso, setNomeCurso] = useState("");
   const [cursoEmEdicao, setCursoEmEdicao] = useState<string | null>(null);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onConfirm?: () => void;
+    textoConfirmar?: string;
+    textoCancelar?: string;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onConfirm?: () => void,
+    textoConfirmar = "OK",
+    textoCancelar = "Cancelar",
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      tipo,
+      onConfirm,
+      textoConfirmar,
+      textoCancelar,
+    });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     carregarCursos();
@@ -43,9 +75,24 @@ const ManageCoursesScreen = () => {
     try {
       const response = await courseService.getAll();
       setCursos(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.warn("Erro ao carregar cursos:", error);
-      Alert.alert("Erro", "Não foi possível carregar a lista de cursos.");
+      if (
+        !error.response &&
+        (error.request || error.message === "Network Error")
+      ) {
+        mostrarAlerta(
+          "Sem Conexão",
+          "Não foi possível carregar a lista de cursos. Verifique a rede.",
+          "erro",
+        );
+      } else {
+        mostrarAlerta(
+          "Erro",
+          "Ocorreu um problema ao buscar a lista de cursos.",
+          "erro",
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +118,7 @@ const ManageCoursesScreen = () => {
 
   const handleSalvarCurso = async () => {
     if (!nomeCurso.trim()) {
-      Alert.alert("Atenção", "Por favor, insira o nome do curso.");
+      mostrarAlerta("Atenção", "Por favor, insira o nome do curso.", "aviso");
       return;
     }
 
@@ -80,46 +127,61 @@ const ManageCoursesScreen = () => {
     try {
       if (cursoEmEdicao) {
         await courseService.update(cursoEmEdicao, { name: nomeCurso.trim() });
-        Alert.alert("Sucesso", "Curso atualizado com sucesso!");
+        mostrarAlerta("Sucesso", "Curso atualizado com sucesso!", "sucesso");
       } else {
         await courseService.create({ name: nomeCurso.trim() });
-        Alert.alert("Sucesso", "Novo curso criado com sucesso!");
+        mostrarAlerta("Sucesso", "Novo curso criado com sucesso!", "sucesso");
       }
 
       fecharModal();
       carregarCursos();
     } catch (error: any) {
-      const msg =
-        error.response?.data?.message || "Ocorreu um erro no servidor.";
-      Alert.alert("Erro", `Não foi possível salvar o curso.\nDetalhe: ${msg}`);
+      let tituloErro = "Falha ao Salvar";
+      let msg = "Não foi possível salvar o curso.";
+
+      if (error.response) {
+        msg = error.response.data?.message || "Erro retornado pelo servidor.";
+      } else if (error.request || error.message === "Network Error") {
+        tituloErro = "Sem Conexão";
+        msg = "Falha de conexão com a API. Tente novamente.";
+      }
+
+      mostrarAlerta(tituloErro, msg, "erro");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = (curso: any) => {
-    Alert.alert(
+    mostrarAlerta(
       "Confirmar exclusão",
-      `Deseja realmente remover o curso ${curso.name}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sim, excluir",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setIsLoading(true);
-              await courseService.delete(curso.id);
-              Alert.alert("Excluído", "Curso removido com sucesso.");
-              carregarCursos();
-            } catch (error: any) {
-              setIsLoading(false);
-              const msg = error.response?.data?.message || "Erro ao excluir.";
-              Alert.alert("Erro", msg);
-            }
-          },
-        },
-      ],
+      `Deseja realmente remover o curso "${curso.name}"?`,
+      "aviso",
+      async () => {
+        setAlertVisible(false);
+        try {
+          setIsLoading(true);
+          await courseService.delete(curso.id);
+          mostrarAlerta("Excluído", "Curso removido com sucesso.", "sucesso");
+          carregarCursos();
+        } catch (error: any) {
+          setIsLoading(false);
+          let tituloErro = "Erro ao Excluir";
+          let msg = "Não foi possível excluir o curso no momento.";
+
+          if (error.response) {
+            msg =
+              error.response.data?.message || "O servidor recusou a exclusão.";
+          } else if (error.request || error.message === "Network Error") {
+            tituloErro = "Sem Conexão";
+            msg = "Falha de rede. Verifique sua internet.";
+          }
+
+          mostrarAlerta(tituloErro, msg, "erro");
+        }
+      },
+      "Sim, excluir",
+      "Cancelar",
     );
   };
 
@@ -261,6 +323,17 @@ const ManageCoursesScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
+        onConfirm={alertConfig.onConfirm}
+        textoConfirmar={alertConfig.textoConfirmar}
+        textoCancelar={alertConfig.textoCancelar}
+      />
     </View>
   );
 };

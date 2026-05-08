@@ -1,3 +1,3 @@
 export default {
-  URL: "http://agendafatec.dyndns.org:6868/apiEvents", 
+  URL: "http://vps66694.publiccloud.com.br:4000/apiEvents", 
 };

@@ -6,13 +6,13 @@ import {
   FlatList,
   Modal,
   TextInput,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageUsersScreen.styles";
 import { userService } from "../../../../services/userService";
+import CustomAlert from "../../../../components/CustomAlert";
 
 const OPCOES_NIVEL = [
   { label: "Auxiliar Docente", value: "AUXILIAR" },
@@ -47,6 +47,38 @@ const ManageUsersScreen = () => {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [nivelSelecionado, setNivelSelecionado] = useState("AUXILIAR");
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onConfirm?: () => void;
+    textoConfirmar?: string;
+    textoCancelar?: string;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onConfirm?: () => void,
+    textoConfirmar = "OK",
+    textoCancelar = "Cancelar",
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      tipo,
+      onConfirm,
+      textoConfirmar,
+      textoCancelar,
+    });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     carregarUsuarios();
@@ -57,9 +89,24 @@ const ManageUsersScreen = () => {
     try {
       const response = await userService.getAll();
       setUsuarios(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.warn("Erro ao carregar usuários:", error);
-      Alert.alert("Erro", "Não foi possível carregar a lista de usuários.");
+      if (
+        !error.response &&
+        (error.request || error.message === "Network Error")
+      ) {
+        mostrarAlerta(
+          "Sem Conexão",
+          "Não foi possível carregar a lista de usuários. Verifique a rede.",
+          "erro",
+        );
+      } else {
+        mostrarAlerta(
+          "Erro",
+          "Ocorreu um problema ao buscar a lista de usuários.",
+          "erro",
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -90,11 +137,15 @@ const ManageUsersScreen = () => {
 
   const handleSalvarUsuario = async () => {
     if (!nome.trim() || !email.trim()) {
-      Alert.alert("Atenção", "Preencha os campos de Nome e E-mail.");
+      mostrarAlerta("Atenção", "Preencha os campos de Nome e E-mail.", "aviso");
       return;
     }
     if (!usuarioEmEdicao && !senha.trim()) {
-      Alert.alert("Atenção", "A senha é obrigatória para novos usuários.");
+      mostrarAlerta(
+        "Atenção",
+        "A senha é obrigatória para criar um novo usuário.",
+        "aviso",
+      );
       return;
     }
 
@@ -107,7 +158,7 @@ const ManageUsersScreen = () => {
           email: email.trim().toLowerCase(),
           role: nivelSelecionado,
         });
-        Alert.alert("Sucesso", "Usuário atualizado!");
+        mostrarAlerta("Sucesso", "Usuário atualizado com sucesso!", "sucesso");
       } else {
         await userService.create({
           name: nome.trim(),
@@ -115,46 +166,60 @@ const ManageUsersScreen = () => {
           password: senha,
           role: nivelSelecionado,
         });
-        Alert.alert("Sucesso", "Novo usuário criado!");
+        mostrarAlerta("Sucesso", "Novo usuário criado com sucesso!", "sucesso");
       }
 
       fecharModal();
       carregarUsuarios();
     } catch (error: any) {
-      const msg =
-        error.response?.data?.message || "Ocorreu um erro no servidor.";
-      Alert.alert(
-        "Erro",
-        `Não foi possível salvar o usuário.\nDetalhe: ${msg}`,
-      );
+      let tituloErro = "Falha ao Salvar";
+      let msg = "Não foi possível salvar os dados do usuário.";
+
+      if (error.response) {
+        msg =
+          error.response.data?.message ||
+          "O servidor recusou o cadastro. Verifique se o e-mail já existe.";
+      } else if (error.request || error.message === "Network Error") {
+        tituloErro = "Sem Conexão";
+        msg = "Falha de conexão com a API. Tente novamente.";
+      }
+
+      mostrarAlerta(tituloErro, msg, "erro");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = (user: any) => {
-    Alert.alert(
+    mostrarAlerta(
       "Confirmar exclusão",
-      `Deseja realmente remover o usuário ${user.name}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sim, excluir",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setIsLoading(true);
-              await userService.delete(user.id);
-              Alert.alert("Excluído", "Usuário removido com sucesso.");
-              carregarUsuarios();
-            } catch (error: any) {
-              setIsLoading(false);
-              const msg = error.response?.data?.message || "Erro ao excluir.";
-              Alert.alert("Erro", msg);
-            }
-          },
-        },
-      ],
+      `Deseja realmente remover o usuário "${user.name}"?`,
+      "aviso",
+      async () => {
+        setAlertVisible(false);
+        try {
+          setIsLoading(true);
+          await userService.delete(user.id);
+          mostrarAlerta("Excluído", "Usuário removido com sucesso.", "sucesso");
+          carregarUsuarios();
+        } catch (error: any) {
+          setIsLoading(false);
+          let tituloErro = "Erro ao Excluir";
+          let msg = "Não foi possível excluir o usuário no momento.";
+
+          if (error.response) {
+            msg =
+              error.response.data?.message || "O servidor recusou a exclusão.";
+          } else if (error.request || error.message === "Network Error") {
+            tituloErro = "Sem Conexão";
+            msg = "Falha de rede. Verifique sua internet.";
+          }
+
+          mostrarAlerta(tituloErro, msg, "erro");
+        }
+      },
+      "Sim, excluir",
+      "Cancelar",
     );
   };
 
@@ -359,6 +424,17 @@ const ManageUsersScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
+        onConfirm={alertConfig.onConfirm}
+        textoConfirmar={alertConfig.textoConfirmar}
+        textoCancelar={alertConfig.textoCancelar}
+      />
     </View>
   );
 };

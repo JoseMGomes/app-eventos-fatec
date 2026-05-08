@@ -4,17 +4,17 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Linking,
   Platform,
 } from "react-native";
-import MapView, { Marker, Circle } from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./CheckinAlunoScreen.styles";
+import MapView, { Marker, Circle, PROVIDER_GOOGLE } from "react-native-maps";
+import CustomAlert from "../../../components/CustomAlert";
 
 const FATEC_COORDENADAS = {
   latitude: -23.290387,
@@ -24,11 +24,30 @@ const RAIO_PERMITIDO_METROS = 50;
 
 const CheckinAlunoScreen = () => {
   const navigation = useNavigation();
-  const [localizacaoAluno, setLocalizacaoAluno] =
-    useState<Location.LocationObject | null>(null);
   const [distancia, setDistancia] = useState<number | null>(null);
   const [palavraSecreta, setPalavraSecreta] = useState("");
   const [carregandoGPS, setCarregandoGPS] = useState(true);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onCloseAcao?: () => void;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onCloseAcao?: () => void,
+  ) => {
+    setAlertConfig({ title, message, tipo, onCloseAcao });
+    setAlertVisible(true);
+  };
 
   const calcularDistancia = (
     lat1: number,
@@ -37,7 +56,6 @@ const CheckinAlunoScreen = () => {
     lon2: number,
   ) => {
     const raioDaTerraEmMetros = 6371e3;
-
     const latitude1EmRadianos = (lat1 * Math.PI) / 180;
     const latitude2EmRadianos = (lat2 * Math.PI) / 180;
     const diferencaLatitudeEmRadianos = ((lat2 - lat1) * Math.PI) / 180;
@@ -82,51 +100,76 @@ const CheckinAlunoScreen = () => {
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permissão negada",
-          "Precisamos do seu GPS para validar a presença no evento.",
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          mostrarAlerta(
+            "Permissão negada",
+            "Precisamos do seu GPS para validar a presença no evento.",
+            "erro",
+          );
+          setCarregandoGPS(false);
+          return;
+        }
+        let providerStatus = await Location.getProviderStatusAsync();
+        if (!providerStatus.locationServicesEnabled) {
+          mostrarAlerta(
+            "GPS Desativado",
+            "Por favor, ative o GPS do seu celular e tente novamente.",
+            "aviso",
+          );
+          setCarregandoGPS(false);
+          return;
+        }
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        const dist = calcularDistancia(
+          location.coords.latitude,
+          location.coords.longitude,
+          FATEC_COORDENADAS.latitude,
+          FATEC_COORDENADAS.longitude,
         );
+
+        setDistancia(dist);
+      } catch (error) {
+        mostrarAlerta(
+          "Sinal Fraco",
+          "Não foi possível buscar sua localização atual. Verifique seu sinal de GPS e tente novamente.",
+          "erro",
+        );
+      } finally {
         setCarregandoGPS(false);
-        return;
       }
-
-      let location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
-      setLocalizacaoAluno(location);
-
-      const dist = calcularDistancia(
-        location.coords.latitude,
-        location.coords.longitude,
-        FATEC_COORDENADAS.latitude,
-        FATEC_COORDENADAS.longitude,
-      );
-      setDistancia(dist);
-      setCarregandoGPS(false);
     })();
   }, []);
 
   const handleValidarPresenca = () => {
     if (!palavraSecreta.trim()) {
-      Alert.alert("Erro", "Digite a palavra secreta fornecida pelo professor.");
-      return;
-    }
-
-    if (distancia !== null && distancia > RAIO_PERMITIDO_METROS) {
-      Alert.alert(
-        "Fora do Local",
-        `Você está a ${formatarDistancia(distancia)} do evento. É necessário estar a no máximo ${RAIO_PERMITIDO_METROS}m para validar a presença.`,
+      mostrarAlerta(
+        "Atenção",
+        "Digite a palavra secreta fornecida pelo professor.",
+        "aviso",
       );
       return;
     }
 
-    Alert.alert(
+    if (distancia !== null && distancia > RAIO_PERMITIDO_METROS) {
+      mostrarAlerta(
+        "Fora do Local",
+        `Você está a ${formatarDistancia(distancia)} do evento. É necessário estar a no máximo ${RAIO_PERMITIDO_METROS}m para validar a presença.`,
+        "erro",
+      );
+      return;
+    }
+
+    mostrarAlerta(
       "Sucesso!",
       "Sua presença foi validada com sucesso via GPS e Palavra Secreta.",
+      "sucesso",
+      () => navigation.goBack(),
     );
-    navigation.goBack();
   };
 
   if (carregandoGPS) {
@@ -145,34 +188,31 @@ const CheckinAlunoScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.mapContainer}>
-        {localizacaoAluno && (
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: FATEC_COORDENADAS.latitude,
-              longitude: FATEC_COORDENADAS.longitude,
-              latitudeDelta: 0.005,
-              longitudeDelta: 0.005,
-            }}
-            showsUserLocation={true}
-          >
-            <Marker
-              coordinate={FATEC_COORDENADAS}
-              title="Fatec Itu"
-              description="Local do Evento"
-              pinColor={COLORS.vermelhoPrincipal}
-            />
-
-            <Circle
-              center={FATEC_COORDENADAS}
-              radius={RAIO_PERMITIDO_METROS}
-              fillColor="rgba(169, 0, 0, 0.15)"
-              strokeColor={COLORS.vermelhoPrincipal}
-            />
-          </MapView>
-        )}
+        <MapView
+          style={styles.map}
+          provider={PROVIDER_GOOGLE}
+          initialRegion={{
+            latitude: FATEC_COORDENADAS.latitude,
+            longitude: FATEC_COORDENADAS.longitude,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+          }}
+          showsUserLocation={true}
+        >
+          <Marker
+            coordinate={FATEC_COORDENADAS}
+            title="Fatec Itu"
+            description="Local do Evento"
+            pinColor={COLORS.vermelhoPrincipal}
+          />
+          <Circle
+            center={FATEC_COORDENADAS}
+            radius={RAIO_PERMITIDO_METROS}
+            fillColor="rgba(169, 0, 0, 0.15)"
+            strokeColor={COLORS.vermelhoPrincipal}
+          />
+        </MapView>
       </View>
-
       <View style={styles.panel}>
         <Text style={styles.title}>Validar Presença</Text>
         <Text style={styles.subtitle}>
@@ -251,6 +291,19 @@ const CheckinAlunoScreen = () => {
           <Text style={styles.confirmButtonText}>Confirmar Presença</Text>
         </TouchableOpacity>
       </View>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => {
+          setAlertVisible(false);
+          if (alertConfig.onCloseAcao) {
+            alertConfig.onCloseAcao();
+          }
+        }}
+      />
     </View>
   );
 };

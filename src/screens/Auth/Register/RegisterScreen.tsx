@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   StatusBar,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -15,23 +14,44 @@ import { useNavigation } from "@react-navigation/native";
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./RegisterScreen.styles";
+import CustomAlert from "../../../components/CustomAlert";
 
 type TipoUsuario = "ALUNO" | "EXTERNO";
 
 const RegisterScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
-
   const [tipoUsuario, setTipoUsuario] = useState<TipoUsuario>("ALUNO");
-
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [documento, setDocumento] = useState("");
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onCloseAcao?: () => void;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onCloseAcao?: () => void,
+  ) => {
+    setAlertConfig({ title, message, tipo, onCloseAcao });
+    setAlertVisible(true);
+  };
 
   const handleRegister = () => {
     if (!nome.trim() || !email.trim() || !documento.trim()) {
-      Alert.alert(
+      mostrarAlerta(
         "Campos Obrigatórios",
         "Por favor, preencha todos os campos para criar sua conta.",
+        "aviso",
       );
       return;
     }
@@ -40,18 +60,19 @@ const RegisterScreen = () => {
       tipoUsuario === "ALUNO" &&
       !email.toLowerCase().includes("@fatec.sp.gov.br")
     ) {
-      Alert.alert(
+      mostrarAlerta(
         "E-mail Inválido",
         "Para cadastro de aluno, utilize o seu e-mail @fatec.sp.gov.br",
+        "erro",
       );
       return;
     }
-
-    Alert.alert(
+    mostrarAlerta(
       "Sucesso!",
       `Cadastro de ${tipoUsuario.toLowerCase()} realizado com sucesso! Verifique seu e-mail.`,
+      "sucesso",
+      () => navigation.navigate("Login"),
     );
-    navigation.navigate("Login");
   };
 
   return (
@@ -226,6 +247,19 @@ const RegisterScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => {
+          setAlertVisible(false);
+          if (alertConfig.onCloseAcao) {
+            alertConfig.onCloseAcao();
+          }
+        }}
+      />
     </KeyboardAvoidingView>
   );
 };

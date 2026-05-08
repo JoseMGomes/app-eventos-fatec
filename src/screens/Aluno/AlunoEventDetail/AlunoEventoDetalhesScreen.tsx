@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,12 @@ import {
   Platform,
   Image,
   StatusBar,
-  Alert,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoEventDetail.styles";
+
+import CustomAlert from "../../../components/CustomAlert";
 
 const InfoRow = ({
   icon,
@@ -36,6 +37,27 @@ const InfoRow = ({
 
 export default function AlunoEventoDetalhesScreen({ route, navigation }: any) {
   const { evento } = route.params || {};
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onCloseAcao?: () => void;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onCloseAcao?: () => void,
+  ) => {
+    setAlertConfig({ title, message, tipo, onCloseAcao });
+    setAlertVisible(true);
+  };
 
   const abrirComoChegar = () => {
     const destino = evento?.local || "Fatec Itu - Dom Amaury Castanho";
@@ -55,9 +77,10 @@ export default function AlunoEventoDetalhesScreen({ route, navigation }: any) {
   };
 
   const fazerInscricao = () => {
-    Alert.alert(
+    mostrarAlerta(
       "Oba!",
-      `Vamos preparar a sua inscrição para o evento: ${evento?.nome || ""}`,
+      `Vamos preparar a sua inscrição para o evento:\n${evento?.nome || ""}`,
+      "sucesso",
     );
   };
 
@@ -168,6 +191,18 @@ export default function AlunoEventoDetalhesScreen({ route, navigation }: any) {
           </View>
         </View>
       </ScrollView>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => {
+          setAlertVisible(false);
+          if (alertConfig.onCloseAcao) {
+            alertConfig.onCloseAcao();
+          }
+        }}
+      />
     </>
   );
 }

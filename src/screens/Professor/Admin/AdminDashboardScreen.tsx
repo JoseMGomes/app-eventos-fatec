@@ -13,6 +13,7 @@ import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AdminDashboardScreen.styles";
 import { authService } from "../../../services/authService";
+import CustomAlert from "../../../components/CustomAlert";
 
 const AdminOption = ({
   icon,
@@ -67,6 +68,25 @@ const AdminDashboardScreen = () => {
     "ADMIN" | "COORDENADOR" | "AUXILIAR" | null
   >(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+  ) => {
+    setAlertConfig({ title, message, tipo });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     const carregarPerfil = async () => {
@@ -76,9 +96,26 @@ const AdminDashboardScreen = () => {
           setUserName(response.data.name || "Professor");
           setUserRole(response.data.role);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.warn("Erro ao carregar dados no Dashboard", error);
         setUserName("Professor");
+
+        if (
+          !error.response &&
+          (error.request || error.message === "Network Error")
+        ) {
+          mostrarAlerta(
+            "Modo Offline",
+            "Não foi possível sincronizar seus dados. Verifique a internet.",
+            "aviso",
+          );
+        } else {
+          mostrarAlerta(
+            "Aviso",
+            "Não foi possível carregar algumas informações do seu perfil.",
+            "aviso",
+          );
+        }
       } finally {
         setIsLoading(false);
       }
@@ -179,6 +216,13 @@ const AdminDashboardScreen = () => {
           )}
         </View>
       </ScrollView>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 };

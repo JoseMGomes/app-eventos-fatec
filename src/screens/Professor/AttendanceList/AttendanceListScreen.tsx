@@ -6,27 +6,54 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, useNavigation } from "@react-navigation/native";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AttendanceListScreen.styles";
 import { participantService } from "../../../services/participantService";
+import CustomAlert from "../../../components/CustomAlert";
 
 const AttendanceListScreen = () => {
   const route = useRoute();
+  const navigation = useNavigation();
   const { eventId } = (route.params as { eventId?: number | string }) || {};
   const [pesquisa, setPesquisa] = useState("");
   const [alunos, setAlunos] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onCloseAcao?: () => void;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onCloseAcao?: () => void,
+  ) => {
+    setAlertConfig({ title, message, tipo, onCloseAcao });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     if (eventId) {
       carregarParticipantes();
     } else {
       setCarregando(false);
-      Alert.alert("Atenção", "ID do Evento não fornecido.");
+      mostrarAlerta(
+        "Atenção",
+        "O ID do evento não foi encontrado.",
+        "aviso",
+        () => navigation.goBack(),
+      );
     }
   }, [eventId]);
 
@@ -35,9 +62,24 @@ const AttendanceListScreen = () => {
     try {
       const response = await participantService.getByEventId(eventId!);
       setAlunos(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.warn("Erro ao carregar participantes:", error);
-      Alert.alert("Erro", "Não foi possível carregar a lista de inscritos.");
+      if (
+        !error.response &&
+        (error.request || error.message === "Network Error")
+      ) {
+        mostrarAlerta(
+          "Sem Conexão",
+          "Não foi possível carregar a lista de inscritos. Verifique a rede.",
+          "erro",
+        );
+      } else {
+        mostrarAlerta(
+          "Erro",
+          "Ocorreu um problema ao buscar os participantes no servidor.",
+          "erro",
+        );
+      }
     } finally {
       setCarregando(false);
     }
@@ -53,16 +95,22 @@ const AttendanceListScreen = () => {
 
     try {
       await participantService.togglePresence(aluno.id, novoStatus);
-    } catch (error) {
+    } catch (error: any) {
       setAlunos((estadoAnterior) =>
         estadoAnterior.map((a) =>
           a.id === aluno.id ? { ...a, isPresent: aluno.isPresent } : a,
         ),
       );
-      Alert.alert(
-        "Erro",
-        "Não foi possível salvar a presença. Tente novamente.",
-      );
+
+      let msgErro = "Não foi possível salvar a presença. Tente novamente.";
+      if (
+        !error.response &&
+        (error.request || error.message === "Network Error")
+      ) {
+        msgErro =
+          "A presença não foi salva por falta de internet. Tente novamente.";
+      }
+      mostrarAlerta("Erro ao Salvar", msgErro, "erro");
     }
   };
 
@@ -72,7 +120,6 @@ const AttendanceListScreen = () => {
     const termo = pesquisa.toLowerCase();
     return nome.includes(termo) || ra.includes(termo);
   });
-
   const totalInscritos = alunos.length;
   const totalPresentes = alunos.filter((a) => a.isPresent).length;
   const percentagem =
@@ -126,7 +173,6 @@ const AttendanceListScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Lista de Presença</Text>
-
         <View style={styles.progressSection}>
           <View style={styles.statsContainer}>
             <Text style={styles.statText}>Inscritos: {totalInscritos}</Text>
@@ -204,6 +250,19 @@ const AttendanceListScreen = () => {
           }
         />
       )}
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => {
+          setAlertVisible(false);
+          if (alertConfig.onCloseAcao) {
+            alertConfig.onCloseAcao();
+          }
+        }}
+      />
     </View>
   );
 };

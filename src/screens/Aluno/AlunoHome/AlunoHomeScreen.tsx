@@ -7,7 +7,6 @@ import {
   Image,
   StatusBar,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
@@ -15,12 +14,32 @@ import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoHomeScreen.styles";
 import { eventService } from "../../../services/eventService";
 import { useNavigation } from "@react-navigation/native";
+import CustomAlert from "../../../components/CustomAlert";
 
 const AlunoHomeScreen = () => {
   const navigation = useNavigation<any>();
   const [userName, setUserName] = useState("Aluno");
   const [eventos, setEventos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+  ) => {
+    setAlertConfig({ title, message, tipo });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     carregarDados();
@@ -61,9 +80,21 @@ const AlunoHomeScreen = () => {
       });
 
       setEventos(eventosFormatados);
-    } catch (error) {
+    } catch (error: any) {
       console.warn("Erro ao carregar Home do Aluno:", error);
-      Alert.alert("Erro", "Não foi possível carregar os eventos da Fatec.");
+      let tituloErro = "Ops!";
+      let mensagemErro =
+        "Não foi possível carregar os eventos da Fatec no momento.";
+
+      if (error.response) {
+        mensagemErro =
+          "Tivemos um problema ao buscar os eventos. Tente atualizar a página.";
+      } else if (error.request || error.message === "Network Error") {
+        tituloErro = "Sem Conexão";
+        mensagemErro = "Verifique sua internet ou tente novamente mais tarde.";
+      }
+
+      mostrarAlerta(tituloErro, mensagemErro, "erro");
     } finally {
       setIsLoading(false);
     }
@@ -159,6 +190,13 @@ const AlunoHomeScreen = () => {
           }
         />
       )}
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 };

@@ -6,7 +6,6 @@ import {
   ScrollView,
   StatusBar,
   Animated,
-  Alert,
   Modal,
   FlatList,
   ActivityIndicator,
@@ -19,12 +18,12 @@ import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoProfileScreen.styles";
 import { AppNavigationProp } from "../../../navigation/types";
 import { courseService } from "../../../services/courseService";
+import CustomAlert from "../../../components/CustomAlert";
 
 const LISTA_SEMESTRES = ["1º", "2º", "3º", "4º", "5º", "6º", "Especial"];
 
 const ProfileScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
-
   const [nome, setNome] = useState("");
   const [ra, setRa] = useState("");
   const [email, setEmail] = useState("");
@@ -38,7 +37,38 @@ const ProfileScreen = () => {
   const [modalSemestreVisible, setModalSemestreVisible] = useState(false);
   const [porcentagem, setPorcentagem] = useState(0);
   const widthAnim = React.useRef(new Animated.Value(0)).current;
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onConfirm?: () => void;
+    textoConfirmar?: string;
+    textoCancelar?: string;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
 
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onConfirm?: () => void,
+    textoConfirmar = "OK",
+    textoCancelar = "Cancelar",
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      tipo,
+      onConfirm,
+      textoConfirmar,
+      textoCancelar,
+    });
+    setAlertVisible(true);
+  };
   useEffect(() => {
     carregarDadosIniciais();
   }, []);
@@ -60,8 +90,20 @@ const ProfileScreen = () => {
       const response = await courseService.getAllPublic();
       const nomesDosCursos = response.data.map((c: any) => c.name);
       setListaCursos(nomesDosCursos);
-    } catch (error) {
+    } catch (error: any) {
       console.log("Erro ao carregar dados iniciais:", error);
+      if (
+        !error.response &&
+        (error.request || error.message === "Network Error")
+      ) {
+        mostrarAlerta(
+          "Sem Conexão",
+          "Não foi possível carregar a lista de cursos. Verifique sua internet.",
+          "erro",
+        );
+      } else {
+        mostrarAlerta("Ops!", "Falha ao carregar a lista de cursos.", "erro");
+      }
     } finally {
       setLoadingCursos(false);
     }
@@ -74,11 +116,12 @@ const ProfileScreen = () => {
         : [nome, ra, curso, semestre, telefone];
 
     const camposPreenchidos = camposObrigatorios.filter(
-      (campo) => campo && campo.trim().length > 0,
+      (campo) => campo && String(campo).trim().length > 0,
     ).length;
-    const calculo = Math.round(
-      (camposPreenchidos / camposObrigatorios.length) * 100,
-    );
+    const calculo =
+      camposObrigatorios.length > 0
+        ? Math.round((camposPreenchidos / camposObrigatorios.length) * 100)
+        : 0;
 
     setPorcentagem(calculo);
     Animated.timing(widthAnim, {
@@ -90,9 +133,10 @@ const ProfileScreen = () => {
 
   const handleSalvarPerfil = async () => {
     if (porcentagem < 100) {
-      Alert.alert(
+      mostrarAlerta(
         "Atenção",
         "Complete 100% do perfil para liberar a inscrição com 1 clique.",
+        "aviso",
       );
       return;
     }
@@ -110,10 +154,29 @@ const ProfileScreen = () => {
         "perfil_aluno",
         JSON.stringify(perfilAtualizado),
       );
-      Alert.alert("Sucesso!", "Seus dados foram atualizados com sucesso.");
+      mostrarAlerta(
+        "Sucesso!",
+        "Seus dados foram atualizados com sucesso.",
+        "sucesso",
+      );
     } catch (error) {
-      Alert.alert("Erro", "Falha ao salvar no dispositivo.");
+      mostrarAlerta("Erro", "Falha ao salvar no dispositivo.", "erro");
     }
+  };
+
+  const handleLogout = () => {
+    mostrarAlerta(
+      "Sair da Conta",
+      "Tem certeza que deseja sair do aplicativo?",
+      "aviso",
+      async () => {
+        await SecureStore.deleteItemAsync("perfil_aluno");
+        setAlertVisible(false);
+        navigation.replace("Login" as any);
+      },
+      "Sim, Sair",
+      "Cancelar",
+    );
   };
 
   const SelecaoModal = ({
@@ -378,18 +441,7 @@ const ProfileScreen = () => {
             flexDirection: "row",
             justifyContent: "center",
           }}
-          onPress={() => {
-            Alert.alert("Sair", "Deseja sair da conta?", [
-              { text: "Não" },
-              {
-                text: "Sim",
-                onPress: async () => {
-                  await SecureStore.deleteItemAsync("perfil_aluno");
-                  navigation.replace("Login" as any);
-                },
-              },
-            ]);
-          }}
+          onPress={handleLogout}
         >
           <MaterialCommunityIcons
             name="logout"
@@ -423,6 +475,17 @@ const ProfileScreen = () => {
         data={LISTA_SEMESTRES}
         onSelect={setSemestre}
         onClose={() => setModalSemestreVisible(false)}
+      />
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
+        onConfirm={alertConfig.onConfirm}
+        textoConfirmar={alertConfig.textoConfirmar}
+        textoCancelar={alertConfig.textoCancelar}
       />
     </View>
   );

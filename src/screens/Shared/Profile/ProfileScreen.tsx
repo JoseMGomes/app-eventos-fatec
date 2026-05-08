@@ -1,10 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  Alert,
   StatusBar,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -12,6 +11,7 @@ import { useNavigation } from "@react-navigation/native";
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./ProfileScreen.styles";
+import CustomAlert from "../../../components/CustomAlert";
 
 const MenuItem = ({
   icon,
@@ -41,20 +41,50 @@ const MenuItem = ({
 
 const ProfileScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onConfirm?: () => void;
+    textoConfirmar?: string;
+    textoCancelar?: string;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onConfirm?: () => void,
+    textoConfirmar = "OK",
+    textoCancelar = "Cancelar",
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      tipo,
+      onConfirm,
+      textoConfirmar,
+      textoCancelar,
+    });
+    setAlertVisible(true);
+  };
 
   const handleLogout = () => {
-    Alert.alert(
+    mostrarAlerta(
       "Sair do Sistema",
       "Tem certeza que deseja encerrar sua sessão?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sair",
-          style: "destructive",
-          onPress: () =>
-            navigation.reset({ index: 0, routes: [{ name: "Login" as any }] }),
-        },
-      ],
+      "aviso",
+      () => {
+        setAlertVisible(false);
+        navigation.reset({ index: 0, routes: [{ name: "Login" as any }] });
+      },
+      "Sim, Sair",
+      "Cancelar",
     );
   };
 
@@ -111,6 +141,16 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
+        onConfirm={alertConfig.onConfirm}
+        textoConfirmar={alertConfig.textoConfirmar}
+        textoCancelar={alertConfig.textoCancelar}
+      />
     </View>
   );
 };

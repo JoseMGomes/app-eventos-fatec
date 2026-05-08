@@ -5,13 +5,13 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./EditProfileScreen.styles";
 import { authService } from "../../../services/authService";
+import CustomAlert from "../../../components/CustomAlert";
 
 const EditProfileScreen = () => {
   const navigation = useNavigation();
@@ -19,6 +19,27 @@ const EditProfileScreen = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onCloseAcao?: () => void;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onCloseAcao?: () => void,
+  ) => {
+    setAlertConfig({ title, message, tipo, onCloseAcao });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     const carregarDados = async () => {
@@ -28,9 +49,25 @@ const EditProfileScreen = () => {
           setNome(response.data.name || "");
           setEmail(response.data.email || "");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.warn("Erro ao buscar dados do perfil:", error);
-        Alert.alert("Erro", "Não foi possível carregar seus dados atuais.");
+
+        if (
+          !error.response &&
+          (error.request || error.message === "Network Error")
+        ) {
+          mostrarAlerta(
+            "Sem Conexão",
+            "Não foi possível carregar seus dados. Verifique a internet.",
+            "erro",
+          );
+        } else {
+          mostrarAlerta(
+            "Erro",
+            "Ocorreu um problema ao buscar os dados do seu perfil.",
+            "erro",
+          );
+        }
       } finally {
         setIsLoading(false);
       }
@@ -41,7 +78,11 @@ const EditProfileScreen = () => {
 
   const handleSalvarPerfil = async () => {
     if (!nome.trim() || !email.trim()) {
-      Alert.alert("Atenção", "Os campos Nome e E-mail não podem ficar vazios.");
+      mostrarAlerta(
+        "Atenção",
+        "Os campos Nome e E-mail não podem ficar vazios.",
+        "aviso",
+      );
       return;
     }
 
@@ -51,9 +92,13 @@ const EditProfileScreen = () => {
       await authService.getCSRF();
       await authService.updateProfile(nome.trim(), email.trim().toLowerCase());
       setIsSaving(false);
-      Alert.alert("Sucesso", "Perfil atualizado com sucesso!", [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
+
+      mostrarAlerta(
+        "Sucesso",
+        "Perfil atualizado com sucesso!",
+        "sucesso",
+        () => navigation.goBack(),
+      );
     } catch (error: any) {
       setIsSaving(false);
 
@@ -61,12 +106,19 @@ const EditProfileScreen = () => {
         "ERRO AO SALVAR PERFIL:",
         error.response?.data || error.message,
       );
-      const msg =
-        error.response?.data?.message || "Ocorreu um erro na conexão.";
-      Alert.alert(
-        "Erro ao Salvar",
-        `Não foi possível atualizar os dados.\n\nDetalhe: ${msg}`,
-      );
+
+      let tituloErro = "Erro ao Salvar";
+      let msg = "Não foi possível atualizar os dados.";
+
+      if (error.response) {
+        msg =
+          error.response.data?.message || "O servidor recusou a atualização.";
+      } else if (error.request || error.message === "Network Error") {
+        tituloErro = "Sem Conexão";
+        msg = "Falha de rede. Verifique sua internet e tente novamente.";
+      }
+
+      mostrarAlerta(tituloErro, msg, "erro");
     }
   };
 
@@ -126,6 +178,19 @@ const EditProfileScreen = () => {
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => {
+          setAlertVisible(false);
+          if (alertConfig.onCloseAcao) {
+            alertConfig.onCloseAcao();
+          }
+        }}
+      />
     </View>
   );
 };

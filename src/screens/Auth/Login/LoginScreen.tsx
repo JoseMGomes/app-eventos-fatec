@@ -7,7 +7,6 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
   Image,
 } from "react-native";
@@ -19,6 +18,7 @@ import { COLORS } from "../../../styles/colors";
 import { styles } from "./LoginScreen.styles";
 import { authService } from "../../../services/authService";
 import { saveToken } from "../../../utils/tokenSave";
+import CustomAlert from "../../../components/CustomAlert";
 
 type ViewState = "login" | "2fa" | "recovery" | "student" | "visitor";
 
@@ -35,6 +35,27 @@ const LoginScreen = () => {
   const [emailUsuario, setEmailUsuario] = useState("");
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onCloseAcao?: () => void;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onCloseAcao?: () => void,
+  ) => {
+    setAlertConfig({ title, message, tipo, onCloseAcao });
+    setAlertVisible(true);
+  };
 
   const switchViewAnimada = (novaView: ViewState) => {
     Animated.parallel([
@@ -72,7 +93,11 @@ const LoginScreen = () => {
       !emailUsuario.trim() ||
       (tipo === "ALUNO" && !raAluno.trim())
     ) {
-      Alert.alert("Atenção", "Preencha todos os campos obrigatórios.");
+      mostrarAlerta(
+        "Atenção",
+        "Preencha todos os campos obrigatórios.",
+        "aviso",
+      );
       return;
     }
 
@@ -91,13 +116,17 @@ const LoginScreen = () => {
       navigation.replace("AlunoTabs" as any);
     } catch (error) {
       setIsLoading(false);
-      Alert.alert("Erro", "Falha ao criar passaporte local.");
+      mostrarAlerta("Erro", "Falha ao criar passaporte local.", "erro");
     }
   };
 
   const handleAcessarAdmin = async () => {
     if (!email.includes("@") || !password) {
-      Alert.alert("Erro", "Por favor, preencha o e-mail e a senha.");
+      mostrarAlerta(
+        "Atenção",
+        "Por favor, preencha o e-mail e a senha.",
+        "aviso",
+      );
       return;
     }
 
@@ -115,23 +144,37 @@ const LoginScreen = () => {
       switchViewAnimada("2fa");
     } catch (error: any) {
       setIsLoading(false);
-      const mensagemErro =
-        error.response?.data?.message ||
-        error.message ||
-        "Erro de conexão com o servidor.";
-      Alert.alert(
-        "Acesso Negado",
-        `Não foi possível entrar.\n\nDetalhe: ${mensagemErro}`,
-      );
+
+      let tituloErro = "Acesso Negado";
+      let mensagemErro = "Ocorreu um erro inesperado. Tente novamente.";
+
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 401 || status === 403 || status === 404) {
+          mensagemErro =
+            "E-mail ou senha incorretos. Verifique suas credenciais e tente novamente.";
+        } else {
+          mensagemErro =
+            "O servidor encontrou um problema. Tente novamente mais tarde.";
+        }
+      } else if (error.request || error.message === "Network Error") {
+        tituloErro = "Sem Conexão";
+        mensagemErro =
+          "Não foi possível conectar ao servidor. Verifique sua internet ou tente novamente mais tarde.";
+      }
+
+      mostrarAlerta(tituloErro, mensagemErro, "erro");
     }
   };
 
   const handleVerificarCodigo = async () => {
     if (code2FA.length < 6) {
-      Alert.alert("Erro", "O código deve conter 6 dígitos.");
+      mostrarAlerta("Atenção", "O código deve conter 6 dígitos.", "aviso");
       return;
     }
+
     setIsLoading(true);
+
     try {
       await authService.getCSRF();
       const response = await authService.login(code2FA);
@@ -142,10 +185,23 @@ const LoginScreen = () => {
       navigation.replace("MainTabs");
     } catch (error: any) {
       setIsLoading(false);
-      Alert.alert(
-        "Erro na Validação",
-        error.response?.data?.message || "Código inválido.",
-      );
+
+      let tituloErro = "Erro na Validação";
+      let mensagemErro = "Não foi possível validar o código.";
+
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 400 || status === 401) {
+          mensagemErro =
+            "Código inválido ou expirado. Verifique e digite novamente.";
+        }
+      } else if (error.request || error.message === "Network Error") {
+        tituloErro = "Sem Conexão";
+        mensagemErro =
+          "Falha de conexão com o servidor. Tente novamente mais tarde.";
+      }
+
+      mostrarAlerta(tituloErro, mensagemErro, "erro");
     }
   };
 
@@ -464,8 +520,12 @@ const LoginScreen = () => {
           <TouchableOpacity
             style={styles.mainButton}
             onPress={() => {
-              Alert.alert("E-mail Enviado!", "Verifique sua caixa de entrada.");
-              switchViewAnimada("login");
+              mostrarAlerta(
+                "E-mail Enviado!",
+                "Verifique sua caixa de entrada.",
+                "sucesso",
+                () => switchViewAnimada("login"),
+              );
             }}
             activeOpacity={0.8}
           >
@@ -508,6 +568,18 @@ const LoginScreen = () => {
           {renderFormContent()}
         </Animated.View>
       </View>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => {
+          setAlertVisible(false);
+          if (alertConfig.onCloseAcao) {
+            alertConfig.onCloseAcao();
+          }
+        }}
+      />
     </KeyboardAvoidingView>
   );
 };

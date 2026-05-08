@@ -6,13 +6,13 @@ import {
   FlatList,
   Modal,
   TextInput,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageCategoriesScreen.styles";
 import { categoryService } from "../../../../services/categoryService";
+import CustomAlert from "../../../../components/CustomAlert";
 
 const ManageCategoriesScreen = () => {
   const [categorias, setCategorias] = useState<any[]>([]);
@@ -23,6 +23,38 @@ const ManageCategoriesScreen = () => {
   const [categoriaEmEdicao, setCategoriaEmEdicao] = useState<string | null>(
     null,
   );
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onConfirm?: () => void;
+    textoConfirmar?: string;
+    textoCancelar?: string;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onConfirm?: () => void,
+    textoConfirmar = "OK",
+    textoCancelar = "Cancelar",
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      tipo,
+      onConfirm,
+      textoConfirmar,
+      textoCancelar,
+    });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     carregarCategorias();
@@ -33,9 +65,24 @@ const ManageCategoriesScreen = () => {
     try {
       const response = await categoryService.getAll();
       setCategorias(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.warn("Erro ao carregar categorias:", error);
-      Alert.alert("Erro", "Não foi possível carregar a lista de categorias.");
+      if (
+        !error.response &&
+        (error.request || error.message === "Network Error")
+      ) {
+        mostrarAlerta(
+          "Sem Conexão",
+          "Não foi possível carregar as categorias. Verifique a rede.",
+          "erro",
+        );
+      } else {
+        mostrarAlerta(
+          "Erro",
+          "Ocorreu um problema ao buscar a lista de categorias.",
+          "erro",
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +108,11 @@ const ManageCategoriesScreen = () => {
 
   const handleSalvarCategoria = async () => {
     if (!nomeCategoria.trim()) {
-      Alert.alert("Atenção", "Por favor, insira o nome da categoria.");
+      mostrarAlerta(
+        "Atenção",
+        "Por favor, insira o nome da categoria.",
+        "aviso",
+      );
       return;
     }
 
@@ -70,50 +121,70 @@ const ManageCategoriesScreen = () => {
     try {
       if (categoriaEmEdicao) {
         await categoryService.update(categoriaEmEdicao, nomeCategoria.trim());
-        Alert.alert("Sucesso", "Categoria atualizada!");
+        mostrarAlerta(
+          "Sucesso",
+          "Categoria atualizada com sucesso!",
+          "sucesso",
+        );
       } else {
         await categoryService.create(nomeCategoria.trim());
-        Alert.alert("Sucesso", "Categoria criada!");
+        mostrarAlerta("Sucesso", "Categoria criada com sucesso!", "sucesso");
       }
 
       fecharModal();
       carregarCategorias();
     } catch (error: any) {
-      const msg =
-        error.response?.data?.message || "Ocorreu um erro no servidor.";
-      Alert.alert("Erro", `Não foi possível salvar.\nDetalhe: ${msg}`);
+      let tituloErro = "Falha ao Salvar";
+      let msg = "Não foi possível salvar a categoria.";
+
+      if (error.response) {
+        msg = error.response.data?.message || "Erro retornado pelo servidor.";
+      } else if (error.request || error.message === "Network Error") {
+        tituloErro = "Sem Conexão";
+        msg = "Falha de conexão com a API. Tente novamente.";
+      }
+
+      mostrarAlerta(tituloErro, msg, "erro");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = (categoria: any) => {
-    Alert.alert(
+    mostrarAlerta(
       "Confirmar exclusão",
       `Você tem certeza que deseja excluir a categoria "${categoria.name}"?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sim, excluir",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setIsLoading(true);
-              await categoryService.delete(categoria.id);
-              Alert.alert("Excluída", "Categoria removida com sucesso.");
-              carregarCategorias();
-            } catch (error: any) {
-              setIsLoading(false);
-              const msg =
-                error.response?.data?.message || "Ocorreu um erro ao excluir.";
-              Alert.alert(
-                "Erro",
-                `Não foi possível excluir a categoria.\nDetalhe: ${msg}`,
-              );
-            }
-          },
-        },
-      ],
+      "aviso",
+      async () => {
+        setAlertVisible(false);
+        try {
+          setIsLoading(true);
+          await categoryService.delete(categoria.id);
+          mostrarAlerta(
+            "Excluída",
+            "Categoria removida com sucesso.",
+            "sucesso",
+          );
+          carregarCategorias();
+        } catch (error: any) {
+          setIsLoading(false);
+
+          let tituloErro = "Erro ao Excluir";
+          let msg = "Não foi possível excluir a categoria no momento.";
+
+          if (error.response) {
+            msg =
+              error.response.data?.message || "O servidor recusou a exclusão.";
+          } else if (error.request || error.message === "Network Error") {
+            tituloErro = "Sem Conexão";
+            msg = "Falha de rede. Verifique sua internet.";
+          }
+
+          mostrarAlerta(tituloErro, msg, "erro");
+        }
+      },
+      "Sim, excluir",
+      "Cancelar",
     );
   };
 
@@ -265,6 +336,17 @@ const ManageCategoriesScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
+        onConfirm={alertConfig.onConfirm}
+        textoConfirmar={alertConfig.textoConfirmar}
+        textoCancelar={alertConfig.textoCancelar}
+      />
     </View>
   );
 };

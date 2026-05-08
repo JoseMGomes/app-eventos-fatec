@@ -5,7 +5,6 @@ import {
   ScrollView,
   Switch,
   TouchableOpacity,
-  Alert,
   Linking,
   AppState,
   Modal,
@@ -16,6 +15,7 @@ import * as Notifications from "expo-notifications";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./SettingsScreen.styles";
 import * as FileSystem from "expo-file-system";
+import CustomAlert from "../../../components/CustomAlert";
 
 const SettingItem = ({
   icon,
@@ -60,7 +60,6 @@ const SettingsScreen = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [cameraPermission, setCameraPermission] = useState(false);
   const [notificationsPermission, setNotificationsPermission] = useState(false);
-
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
     tipo: "sobre" | "politica";
@@ -69,10 +68,45 @@ const SettingsScreen = () => {
     tipo: "sobre",
   });
 
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onConfirm?: () => void;
+    textoConfirmar?: string;
+    textoCancelar?: string;
+    onCloseAcao?: () => void;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onConfirm?: () => void,
+    textoConfirmar = "OK",
+    textoCancelar = "Cancelar",
+    onCloseAcao?: () => void,
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      tipo,
+      onConfirm,
+      textoConfirmar,
+      textoCancelar,
+      onCloseAcao,
+    });
+    setAlertVisible(true);
+  };
+
   const checkAllPermissions = async () => {
     const cameraStatus = await Camera.getCameraPermissionsAsync();
     setCameraPermission(cameraStatus.status === "granted");
-
     const notifStatus = await Notifications.getPermissionsAsync();
     setNotificationsPermission(notifStatus.status === "granted");
   };
@@ -90,32 +124,30 @@ const SettingsScreen = () => {
   const handleCameraToggle = async () => {
     const { status, canAskAgain } = await Camera.getCameraPermissionsAsync();
     if (status === "granted") {
-      Alert.alert(
+      mostrarAlerta(
         "Permissão do Sistema",
-        "Por segurança do celular, para revogar o acesso à câmera você precisa alterar nas configurações do aparelho.",
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Abrir Configurações",
-            onPress: () => Linking.openSettings(),
-          },
-        ],
+        "Por segurança, para revogar o acesso à câmera você precisa alterar nas configurações do aparelho.",
+        "aviso",
+        () => {
+          setAlertVisible(false);
+          Linking.openSettings();
+        },
+        "Abrir Configurações",
       );
     } else {
       if (canAskAgain) {
         const request = await Camera.requestCameraPermissionsAsync();
         setCameraPermission(request.status === "granted");
       } else {
-        Alert.alert(
+        mostrarAlerta(
           "Câmera Bloqueada",
           "O acesso à câmera foi negado permanentemente. Acesse as configurações do aparelho para liberar.",
-          [
-            { text: "Cancelar", style: "cancel" },
-            {
-              text: "Abrir Configurações",
-              onPress: () => Linking.openSettings(),
-            },
-          ],
+          "erro",
+          () => {
+            setAlertVisible(false);
+            Linking.openSettings();
+          },
+          "Abrir Configurações",
         );
       }
     }
@@ -124,16 +156,15 @@ const SettingsScreen = () => {
   const handleNotificationsToggle = async () => {
     const { status, canAskAgain } = await Notifications.getPermissionsAsync();
     if (status === "granted") {
-      Alert.alert(
+      mostrarAlerta(
         "Permissão do Sistema",
-        "Para parar de receber avisos sobre eventos e certificados, você precisa desativar as notificações nas configurações do aparelho.",
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Abrir Configurações",
-            onPress: () => Linking.openSettings(),
-          },
-        ],
+        "Para parar de receber avisos, desative as notificações nas configurações do aparelho.",
+        "aviso",
+        () => {
+          setAlertVisible(false);
+          Linking.openSettings();
+        },
+        "Abrir Configurações",
       );
     } else {
       if (canAskAgain) {
@@ -141,83 +172,83 @@ const SettingsScreen = () => {
           await Notifications.requestPermissionsAsync();
         setNotificationsPermission(newStatus === "granted");
       } else {
-        Alert.alert(
+        mostrarAlerta(
           "Notificações Bloqueadas",
-          "As notificações estão desativadas permanentemente. Acesse as configurações do aparelho para liberar os avisos da Fatec.",
-          [
-            { text: "Cancelar", style: "cancel" },
-            {
-              text: "Abrir Configurações",
-              onPress: () => Linking.openSettings(),
-            },
-          ],
+          "As notificações estão desativadas permanentemente. Acesse as configurações do aparelho para liberar os avisos.",
+          "erro",
+          () => {
+            setAlertVisible(false);
+            Linking.openSettings();
+          },
+          "Abrir Configurações",
         );
       }
     }
   };
 
   const handleDarkModeToggle = (value: boolean) => {
-    Alert.alert(
+    mostrarAlerta(
       "Alterar Tema",
       value
         ? "Deseja ativar o Modo Escuro?"
         : "Deseja voltar para o Modo Claro?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Confirmar",
-          onPress: () => {
-            setIsDarkMode(value);
-            if (value) {
-              setTimeout(() => {
-                Alert.alert(
-                  "Em breve",
-                );
-                setIsDarkMode(false);
-              }, 600);
-            }
-          },
-        },
-      ],
+      "aviso",
+      () => {
+        setAlertVisible(false);
+        setIsDarkMode(value);
+        if (value) {
+          setTimeout(() => {
+            mostrarAlerta(
+              "Em breve",
+              "O modo escuro está em desenvolvimento e será lançado na próxima versão.",
+              "aviso",
+            );
+            setIsDarkMode(false);
+          }, 600);
+        }
+      },
+      "Confirmar",
     );
   };
 
   const handleClearCache = () => {
-    Alert.alert(
+    mostrarAlerta(
       "Limpar Cache do Sistema",
       "Isto irá apagar imagens temporárias e liberar espaço. Confirmar limpeza?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Limpar Cache",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const cacheDir = (FileSystem as any).cacheDirectory;
-              if (cacheDir) {
-                const files = await (FileSystem as any).readDirectoryAsync(
-                  cacheDir,
-                );
-                for (const file of files) {
-                  await (FileSystem as any).deleteAsync(`${cacheDir}${file}`, {
-                    idempotent: true,
-                  });
-                }
-                Alert.alert(
-                  "Sucesso",
-                  "Cache do sistema liberado com sucesso!",
-                );
-              }
-            } catch (error) {
-              console.error("Erro ao limpar cache:", error);
-              Alert.alert(
-                "Erro",
-                "Não foi possível limpar os arquivos temporários.",
-              );
+      "aviso",
+      async () => {
+        setAlertVisible(false);
+        try {
+          const cacheDir = (FileSystem as any).cacheDirectory;
+          if (cacheDir) {
+            const files = await (FileSystem as any).readDirectoryAsync(
+              cacheDir,
+            );
+            for (const file of files) {
+              await (FileSystem as any).deleteAsync(`${cacheDir}${file}`, {
+                idempotent: true,
+              });
             }
-          },
-        },
-      ],
+            setTimeout(() => {
+              mostrarAlerta(
+                "Sucesso",
+                "Cache do sistema liberado com sucesso!",
+                "sucesso",
+              );
+            }, 300);
+          }
+        } catch (error) {
+          console.error("Erro ao limpar cache:", error);
+          setTimeout(() => {
+            mostrarAlerta(
+              "Erro",
+              "Não foi possível limpar os arquivos temporários.",
+              "erro",
+            );
+          }, 300);
+        }
+      },
+      "Limpar Cache",
     );
   };
 
@@ -416,7 +447,7 @@ const SettingsScreen = () => {
                           color: COLORS.textoPrincipal,
                         }}
                       >
-                         José Lucas
+                        José Lucas
                       </Text>
                       <TouchableOpacity
                         onPress={() =>
@@ -465,7 +496,7 @@ const SettingsScreen = () => {
                           color: COLORS.textoPrincipal,
                         }}
                       >
-                         Guilherme Francisco
+                        Guilherme Francisco
                       </Text>
                       <TouchableOpacity
                         onPress={() =>
@@ -569,6 +600,22 @@ const SettingsScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => {
+          setAlertVisible(false);
+          if (alertConfig.onCloseAcao) {
+            alertConfig.onCloseAcao();
+          }
+        }}
+        onConfirm={alertConfig.onConfirm}
+        textoConfirmar={alertConfig.textoConfirmar}
+        textoCancelar={alertConfig.textoCancelar}
+      />
     </View>
   );
 };

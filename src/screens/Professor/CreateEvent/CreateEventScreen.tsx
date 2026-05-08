@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
-  Alert,
   Image,
   ActivityIndicator,
   Modal,
@@ -20,6 +19,7 @@ import { COLORS } from "../../../styles/colors";
 import { styles } from "./CreateEventScreen.styles";
 import { eventService } from "../../../services/eventService";
 import { api } from "../../../factory/api";
+import CustomAlert from "../../../components/CustomAlert";
 
 LocaleConfig.locales["pt-br"] = {
   monthNames: [
@@ -119,6 +119,27 @@ const CreateEventScreen = () => {
   const [tipoSelecao, setTipoSelecao] = useState<
     "curso" | "categoria" | "local" | "semestre" | "horaInicio" | "horaFim"
   >("curso");
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onCloseAcao?: () => void;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onCloseAcao?: () => void,
+  ) => {
+    setAlertConfig({ title, message, tipo, onCloseAcao });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     carregarListasIniciais();
@@ -234,9 +255,10 @@ const CreateEventScreen = () => {
   const escolherImagem = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
+      mostrarAlerta(
         "Acesso Negado",
         "Precisamos de permissão para abrir a galeria.",
+        "aviso",
       );
       return;
     }
@@ -251,9 +273,10 @@ const CreateEventScreen = () => {
 
   const handleSalvarEvento = async () => {
     if (!nome || !data || !horaInicio || !horaFim || !localId || !imagemUri) {
-      Alert.alert(
+      mostrarAlerta(
         "Atenção",
         "Preencha os campos obrigatórios e adicione a imagem da capa.",
+        "aviso",
       );
       return;
     }
@@ -284,12 +307,24 @@ const CreateEventScreen = () => {
       } as any);
 
       await eventService.createEvent(formData);
-      Alert.alert("Sucesso!", "Evento criado com sucesso.", [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
+
+      mostrarAlerta("Sucesso!", "Evento criado com sucesso.", "sucesso", () => {
+        navigation.goBack();
+      });
     } catch (error: any) {
-      const msg = error.response?.data?.message || "Erro no servidor.";
-      Alert.alert("Erro", `Não foi possível criar o evento.\nDetalhe: ${msg}`);
+      let tituloErro = "Falha ao Criar";
+      let msg = "Não foi possível criar o evento no momento.";
+
+      if (error.response) {
+        msg =
+          error.response.data?.message ||
+          "O servidor recusou a criação do evento.";
+      } else if (error.request || error.message === "Network Error") {
+        tituloErro = "Sem Conexão";
+        msg = "Falha de conexão. Verifique sua internet.";
+      }
+
+      mostrarAlerta(tituloErro, msg, "erro");
     } finally {
       setIsSaving(false);
     }
@@ -641,9 +676,10 @@ const CreateEventScreen = () => {
                   setData(day.dateString);
                   setModalCalendarioVisible(false);
                 } else {
-                  Alert.alert(
+                  mostrarAlerta(
                     "Indisponível",
                     "Esta sala já está ocupada ou não possui horários neste dia.",
+                    "aviso",
                   );
                 }
               }}
@@ -750,6 +786,18 @@ const CreateEventScreen = () => {
           </View>
         </View>
       </Modal>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => {
+          setAlertVisible(false);
+          if (alertConfig.onCloseAcao) {
+            alertConfig.onCloseAcao();
+          }
+        }}
+      />
     </View>
   );
 };

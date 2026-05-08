@@ -1,7 +1,6 @@
 import { useRoute } from "@react-navigation/native";
 import React, { useEffect } from "react";
 import {
-  Alert,
   ScrollView,
   Text,
   TextInput,
@@ -11,6 +10,7 @@ import {
 import { styles } from "./Scanner.style";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../styles/colors";
+import CustomAlert from "../../../components/CustomAlert";
 
 const ScannerScreen = () => {
   const route = useRoute<any>();
@@ -19,6 +19,25 @@ const ScannerScreen = () => {
   const [isCheckedActive, setIsCheckedActive] = React.useState(false);
   const [secretWord, setSecretWord] = React.useState("");
   const [timeLeft, setTimeLeft] = React.useState(900);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+  ) => {
+    setAlertConfig({ title, message, tipo });
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -28,9 +47,10 @@ const ScannerScreen = () => {
       }, 1000);
     } else if (timeLeft === 0 && isCheckedActive) {
       handleEncerrarCheckIn();
-      Alert.alert(
-        "Tempo esgotado",
-        "O tempo para realizar o check-in expirou.",
+      mostrarAlerta(
+        "Tempo Esgotado",
+        "Os 15 minutos para o check-in se passaram. A palavra secreta foi desativada.",
+        "aviso",
       );
     }
     return () => clearInterval(timer);
@@ -45,12 +65,24 @@ const ScannerScreen = () => {
   };
 
   const handleIniciarCheckIn = () => {
-    if (secretWord.trim()) {
+    const palavraLimpa = secretWord.trim();
+    if (palavraLimpa.length > 0 && palavraLimpa.length < 3) {
+      mostrarAlerta(
+        "Palavra muito curta",
+        "A palavra secreta deve ter no mínimo 3 caracteres, ou deixe em branco para sortear uma.",
+        "aviso",
+      );
+      return;
+    }
+
+    if (!palavraLimpa) {
       const randomWord = Math.random()
         .toString(36)
         .substring(2, 8)
         .toUpperCase();
       setSecretWord(randomWord);
+    } else {
+      setSecretWord(palavraLimpa.toUpperCase());
     }
 
     setIsCheckedActive(true);
@@ -86,7 +118,7 @@ const ScannerScreen = () => {
 
               <View style={styles.wordContainer}>
                 <Text style={styles.wordLabel}>Palavra Secreta:</Text>
-                <Text style={styles.wordText}>{secretWord.toUpperCase()}</Text>
+                <Text style={styles.wordText}>{secretWord}</Text>
               </View>
 
               <View style={styles.timerContainer}>
@@ -123,15 +155,17 @@ const ScannerScreen = () => {
               />
               <Text style={styles.helperText}>
                 Defina uma palavra secreta para os alunos digitarem no
-                aplicativo, ou deixe em branco para gerar um palavra aleatória.
+                aplicativo, ou deixe em branco para gerar uma palavra aleatória.
                 O código ficará válido por 15 minutos.
               </Text>
 
               <TextInput
                 style={styles.input}
                 placeholder="EX: FATEC2026"
+                placeholderTextColor="#CCC"
                 value={secretWord}
                 onChangeText={setSecretWord}
+                autoCapitalize="characters"
                 maxLength={15}
               />
 
@@ -150,6 +184,13 @@ const ScannerScreen = () => {
           )}
         </View>
       </ScrollView>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 };

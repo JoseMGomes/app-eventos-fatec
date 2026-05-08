@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
 import { styles } from "./EventDetail.style";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../styles/colors";
+import CustomAlert from "../../../components/CustomAlert";
 
 type EventDetailRouteProp = RouteProp<RootStackParamList, "EventDetail">;
 
@@ -45,6 +46,38 @@ const InfoRow = ({
 const EventDetailScreen = ({ navigation }: Props) => {
   const route = useRoute<EventDetailRouteProp>();
   const { evento } = route.params;
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    tipo: "sucesso" | "erro" | "aviso";
+    onConfirm?: () => void;
+    textoConfirmar?: string;
+    textoCancelar?: string;
+  }>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
+
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onConfirm?: () => void,
+    textoConfirmar = "OK",
+    textoCancelar = "Cancelar",
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      tipo,
+      onConfirm,
+      textoConfirmar,
+      textoCancelar,
+    });
+    setAlertVisible(true);
+  };
 
   const formatarData = (dataISO: string) => {
     if (!dataISO) return "Data não informada";
@@ -137,11 +170,13 @@ const EventDetailScreen = ({ navigation }: Props) => {
                 Painel de Check-in (Palavra/QR)
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[styles.actionButton, styles.secondaryButton]}
               activeOpacity={0.8}
-              onPress={() => navigation.navigate("AttendanceList", { eventId: evento.id })}
+              onPress={() =>
+                navigation.navigate("AttendanceList", { eventId: evento.id })
+              }
             >
               <MaterialCommunityIcons
                 name="clipboard-check-outline"
@@ -157,6 +192,16 @@ const EventDetailScreen = ({ navigation }: Props) => {
           </View>
         </View>
       </ScrollView>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tipo={alertConfig.tipo}
+        onClose={() => setAlertVisible(false)}
+        onConfirm={alertConfig.onConfirm}
+        textoConfirmar={alertConfig.textoConfirmar}
+        textoCancelar={alertConfig.textoCancelar}
+      />
     </>
   );
 };
