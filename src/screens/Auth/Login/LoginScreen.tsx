@@ -19,6 +19,18 @@ import { styles } from "./LoginScreen.styles";
 import { authService } from "../../../services/authService";
 import { saveToken } from "../../../utils/tokenSave";
 import CustomAlert from "../../../components/CustomAlert";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  alunoAuthSchema,
+  AlunoAuthFormData,
+  visitanteAuthSchema,
+  VisitanteAuthFormData,
+  loginAdminSchema,
+  LoginAdminFormData,
+  recoverySchema,
+  RecoveryFormData,
+} from "../../../validations/schemas";
 
 type ViewState = "login" | "2fa" | "recovery" | "student" | "visitor";
 
@@ -27,25 +39,31 @@ const LoginScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [viewState, setViewState] = useState<ViewState>("student");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [code2FA, setCode2FA] = useState("");
-  const [nomeUsuario, setNomeUsuario] = useState("");
-  const [raAluno, setRaAluno] = useState("");
-  const [emailUsuario, setEmailUsuario] = useState("");
+
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
+
+  const formAluno = useForm<AlunoAuthFormData>({
+    resolver: zodResolver(alunoAuthSchema),
+  });
+  const formVisitante = useForm<VisitanteAuthFormData>({
+    resolver: zodResolver(visitanteAuthSchema),
+  });
+  const formLogin = useForm<LoginAdminFormData>({
+    resolver: zodResolver(loginAdminSchema),
+  });
+  const formRecovery = useForm<RecoveryFormData>({
+    resolver: zodResolver(recoverySchema),
+  });
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
     message: string;
     tipo: "sucesso" | "erro" | "aviso";
     onCloseAcao?: () => void;
-  }>({
-    title: "",
-    message: "",
-    tipo: "aviso",
-  });
+  }>({ title: "", message: "", tipo: "aviso" });
 
   const mostrarAlerta = (
     title: string,
@@ -87,64 +105,58 @@ const LoginScreen = () => {
     });
   };
 
-  const handleAcessoLocal = async (tipo: "ALUNO" | "VISITANTE") => {
-    if (
-      !nomeUsuario.trim() ||
-      !emailUsuario.trim() ||
-      (tipo === "ALUNO" && !raAluno.trim())
-    ) {
-      mostrarAlerta(
-        "Atenção",
-        "Preencha todos os campos obrigatórios.",
-        "aviso",
-      );
-      return;
-    }
-
+  const onAcessoAluno = async (data: AlunoAuthFormData) => {
     setIsLoading(true);
     const perfil = {
-      nome: nomeUsuario.trim(),
-      email: emailUsuario.trim().toLowerCase(),
-      ra: tipo === "ALUNO" ? raAluno.trim() : null,
-      instituicao: tipo === "VISITANTE" ? "Visitante Externo" : "FATEC",
-      tipo: tipo,
+      nome: data.nomeUsuario.trim(),
+      email: data.emailUsuario.trim().toLowerCase(),
+      ra: data.raAluno.trim(),
+      instituicao: "FATEC",
+      tipo: "ALUNO",
     };
 
     try {
       await SecureStore.setItemAsync("perfil_aluno", JSON.stringify(perfil));
-      setIsLoading(false);
       navigation.replace("AlunoTabs" as any);
     } catch (error) {
-      setIsLoading(false);
       mostrarAlerta("Erro", "Falha ao criar passaporte local.", "erro");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleAcessarAdmin = async () => {
-    if (!email.includes("@") || !password) {
-      mostrarAlerta(
-        "Atenção",
-        "Por favor, preencha o e-mail e a senha.",
-        "aviso",
-      );
-      return;
-    }
-
+  const onAcessoVisitante = async (data: VisitanteAuthFormData) => {
     setIsLoading(true);
-    const emailFormatado = email.trim().toLowerCase();
-    const senhaFormatada = password.trim();
+    const perfil = {
+      nome: data.nomeUsuario.trim(),
+      email: data.emailUsuario.trim().toLowerCase(),
+      ra: null,
+      instituicao: "Visitante Externo",
+      tipo: "VISITANTE",
+    };
 
     try {
+      await SecureStore.setItemAsync("perfil_aluno", JSON.stringify(perfil));
+      navigation.replace("AlunoTabs" as any);
+    } catch (error) {
+      mostrarAlerta("Erro", "Falha ao criar passaporte local.", "erro");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onAcessarAdmin = async (data: LoginAdminFormData) => {
+    setIsLoading(true);
+    try {
       await authService.getCSRF();
-      const response = await authService.requestLogin(
-        emailFormatado,
-        senhaFormatada,
+      await authService.requestLogin(
+        data.email.trim().toLowerCase(),
+        data.password.trim(),
       );
       setIsLoading(false);
       switchViewAnimada("2fa");
     } catch (error: any) {
       setIsLoading(false);
-
       let tituloErro = "Acesso Negado";
       let mensagemErro = "Ocorreu um erro inesperado. Tente novamente.";
 
@@ -160,9 +172,8 @@ const LoginScreen = () => {
       } else if (error.request || error.message === "Network Error") {
         tituloErro = "Sem Conexão";
         mensagemErro =
-          "Não foi possível conectar ao servidor. Verifique sua internet ou tente novamente mais tarde.";
+          "Não foi possível conectar ao servidor. Verifique sua internet.";
       }
-
       mostrarAlerta(tituloErro, mensagemErro, "erro");
     }
   };
@@ -174,7 +185,6 @@ const LoginScreen = () => {
     }
 
     setIsLoading(true);
-
     try {
       await authService.getCSRF();
       const response = await authService.login(code2FA);
@@ -185,24 +195,28 @@ const LoginScreen = () => {
       navigation.replace("MainTabs");
     } catch (error: any) {
       setIsLoading(false);
-
       let tituloErro = "Erro na Validação";
       let mensagemErro = "Não foi possível validar o código.";
 
-      if (error.response) {
-        const status = error.response.status;
-        if (status === 400 || status === 401) {
-          mensagemErro =
-            "Código inválido ou expirado. Verifique e digite novamente.";
-        }
+      if (error.response?.status === 400 || error.response?.status === 401) {
+        mensagemErro =
+          "Código inválido ou expirado. Verifique e digite novamente.";
       } else if (error.request || error.message === "Network Error") {
         tituloErro = "Sem Conexão";
         mensagemErro =
           "Falha de conexão com o servidor. Tente novamente mais tarde.";
       }
-
       mostrarAlerta(tituloErro, mensagemErro, "erro");
     }
+  };
+
+  const onRecuperarSenha = (data: RecoveryFormData) => {
+    mostrarAlerta(
+      "E-mail Enviado!",
+      `Enviamos as instruções para ${data.email}`,
+      "sucesso",
+      () => switchViewAnimada("login"),
+    );
   };
 
   const renderFormContent = () => {
@@ -210,60 +224,155 @@ const LoginScreen = () => {
       return (
         <>
           <Text style={styles.cardTitle}>Acesso do Aluno</Text>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="account-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Nome Completo"
-              placeholderTextColor="#999"
-              value={nomeUsuario}
-              onChangeText={setNomeUsuario}
-            />
+
+          <View style={{ marginBottom: 15 }}>
+            <View
+              style={[
+                styles.inputContainer,
+                formAluno.formState.errors.nomeUsuario && {
+                  borderColor: COLORS.vermelhoPrincipal,
+                  borderWidth: 1,
+                  marginBottom: 0,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="account-outline"
+                size={20}
+                color={COLORS.textoSecundario}
+                style={styles.icon}
+              />
+              <Controller
+                control={formAluno.control}
+                name="nomeUsuario"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nome Completo"
+                    placeholderTextColor="#999"
+                    value={value}
+                    onChangeText={onChange}
+                  />
+                )}
+              />
+            </View>
+            {formAluno.formState.errors.nomeUsuario && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                  marginLeft: 5,
+                }}
+              >
+                {formAluno.formState.errors.nomeUsuario.message}
+              </Text>
+            )}
           </View>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="card-account-details-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Seu RA"
-              placeholderTextColor="#999"
-              value={raAluno}
-              onChangeText={setRaAluno}
-              keyboardType="number-pad"
-            />
+
+          <View style={{ marginBottom: 15 }}>
+            <View
+              style={[
+                styles.inputContainer,
+                formAluno.formState.errors.raAluno && {
+                  borderColor: COLORS.vermelhoPrincipal,
+                  borderWidth: 1,
+                  marginBottom: 0,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="card-account-details-outline"
+                size={20}
+                color={COLORS.textoSecundario}
+                style={styles.icon}
+              />
+              <Controller
+                control={formAluno.control}
+                name="raAluno"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Seu RA"
+                    placeholderTextColor="#999"
+                    value={value}
+                    onChangeText={onChange}
+                    keyboardType="number-pad"
+                  />
+                )}
+              />
+            </View>
+            {formAluno.formState.errors.raAluno && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                  marginLeft: 5,
+                }}
+              >
+                {formAluno.formState.errors.raAluno.message}
+              </Text>
+            )}
           </View>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="email-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="E-mail Institucional"
-              placeholderTextColor="#999"
-              value={emailUsuario}
-              onChangeText={setEmailUsuario}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+
+          <View style={{ marginBottom: 15 }}>
+            <View
+              style={[
+                styles.inputContainer,
+                formAluno.formState.errors.emailUsuario && {
+                  borderColor: COLORS.vermelhoPrincipal,
+                  borderWidth: 1,
+                  marginBottom: 0,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="email-outline"
+                size={20}
+                color={COLORS.textoSecundario}
+                style={styles.icon}
+              />
+              <Controller
+                control={formAluno.control}
+                name="emailUsuario"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="E-mail Institucional"
+                    placeholderTextColor="#999"
+                    value={value}
+                    onChangeText={onChange}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                )}
+              />
+            </View>
+            {formAluno.formState.errors.emailUsuario && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                  marginLeft: 5,
+                }}
+              >
+                {formAluno.formState.errors.emailUsuario.message}
+              </Text>
+            )}
           </View>
 
           <TouchableOpacity
             style={styles.mainButton}
-            onPress={() => handleAcessoLocal("ALUNO")}
+            onPress={formAluno.handleSubmit(onAcessoAluno)}
+            disabled={isLoading}
           >
-            <Text style={styles.mainButtonText}>Acessar como Aluno</Text>
+            {isLoading ? (
+              <ActivityIndicator color={COLORS.branco} />
+            ) : (
+              <Text style={styles.mainButtonText}>Acessar como Aluno</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -294,47 +403,108 @@ const LoginScreen = () => {
             Para público externo e convidados.
           </Text>
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="account-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Nome Completo"
-              placeholderTextColor="#999"
-              value={nomeUsuario}
-              onChangeText={setNomeUsuario}
-            />
+          <View style={{ marginBottom: 15 }}>
+            <View
+              style={[
+                styles.inputContainer,
+                formVisitante.formState.errors.nomeUsuario && {
+                  borderColor: COLORS.vermelhoPrincipal,
+                  borderWidth: 1,
+                  marginBottom: 0,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="account-outline"
+                size={20}
+                color={COLORS.textoSecundario}
+                style={styles.icon}
+              />
+              <Controller
+                control={formVisitante.control}
+                name="nomeUsuario"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nome Completo"
+                    placeholderTextColor="#999"
+                    value={value}
+                    onChangeText={onChange}
+                  />
+                )}
+              />
+            </View>
+            {formVisitante.formState.errors.nomeUsuario && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                  marginLeft: 5,
+                }}
+              >
+                {formVisitante.formState.errors.nomeUsuario.message}
+              </Text>
+            )}
           </View>
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="email-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="E-mail para contato"
-              placeholderTextColor="#999"
-              value={emailUsuario}
-              onChangeText={(text) =>
-                setEmailUsuario(text.trim().toLowerCase())
-              }
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+          <View style={{ marginBottom: 15 }}>
+            <View
+              style={[
+                styles.inputContainer,
+                formVisitante.formState.errors.emailUsuario && {
+                  borderColor: COLORS.vermelhoPrincipal,
+                  borderWidth: 1,
+                  marginBottom: 0,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="email-outline"
+                size={20}
+                color={COLORS.textoSecundario}
+                style={styles.icon}
+              />
+              <Controller
+                control={formVisitante.control}
+                name="emailUsuario"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="E-mail para contato"
+                    placeholderTextColor="#999"
+                    value={value}
+                    onChangeText={onChange}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                )}
+              />
+            </View>
+            {formVisitante.formState.errors.emailUsuario && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                  marginLeft: 5,
+                }}
+              >
+                {formVisitante.formState.errors.emailUsuario.message}
+              </Text>
+            )}
           </View>
 
           <TouchableOpacity
             style={styles.mainButton}
-            onPress={() => handleAcessoLocal("VISITANTE")}
+            onPress={formVisitante.handleSubmit(onAcessoVisitante)}
+            disabled={isLoading}
           >
-            <Text style={styles.mainButtonText}>Acessar Eventos</Text>
+            {isLoading ? (
+              <ActivityIndicator color={COLORS.branco} />
+            ) : (
+              <Text style={styles.mainButtonText}>Acessar Eventos</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -354,52 +524,111 @@ const LoginScreen = () => {
         <>
           <Text style={styles.cardTitle}>Área do Colaborador</Text>
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="email-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="E-mail Institucional"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={(text) => setEmail(text.trim().toLowerCase())}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!isLoading}
-            />
-          </View>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="lock-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Senha"
-              placeholderTextColor="#999"
-              value={password}
-              onChangeText={(text) => setPassword(text.trim())}
-              secureTextEntry={!showPassword}
-              editable={!isLoading}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={{ padding: 5 }}
-              activeOpacity={0.7}
-              disabled={isLoading}
+          <View style={{ marginBottom: 15 }}>
+            <View
+              style={[
+                styles.inputContainer,
+                formLogin.formState.errors.email && {
+                  borderColor: COLORS.vermelhoPrincipal,
+                  borderWidth: 1,
+                  marginBottom: 0,
+                },
+              ]}
             >
               <MaterialCommunityIcons
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
-                size={22}
+                name="email-outline"
+                size={20}
                 color={COLORS.textoSecundario}
+                style={styles.icon}
               />
-            </TouchableOpacity>
+              <Controller
+                control={formLogin.control}
+                name="email"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="E-mail Institucional"
+                    placeholderTextColor="#999"
+                    value={value}
+                    onChangeText={onChange}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    editable={!isLoading}
+                  />
+                )}
+              />
+            </View>
+            {formLogin.formState.errors.email && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                  marginLeft: 5,
+                }}
+              >
+                {formLogin.formState.errors.email.message}
+              </Text>
+            )}
+          </View>
+
+          <View style={{ marginBottom: 15 }}>
+            <View
+              style={[
+                styles.inputContainer,
+                formLogin.formState.errors.password && {
+                  borderColor: COLORS.vermelhoPrincipal,
+                  borderWidth: 1,
+                  marginBottom: 0,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="lock-outline"
+                size={20}
+                color={COLORS.textoSecundario}
+                style={styles.icon}
+              />
+              <Controller
+                control={formLogin.control}
+                name="password"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Senha"
+                    placeholderTextColor="#999"
+                    value={value}
+                    onChangeText={onChange}
+                    secureTextEntry={!showPassword}
+                    editable={!isLoading}
+                  />
+                )}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={{ padding: 5 }}
+                activeOpacity={0.7}
+                disabled={isLoading}
+              >
+                <MaterialCommunityIcons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={22}
+                  color={COLORS.textoSecundario}
+                />
+              </TouchableOpacity>
+            </View>
+            {formLogin.formState.errors.password && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                  marginLeft: 5,
+                }}
+              >
+                {formLogin.formState.errors.password.message}
+              </Text>
+            )}
           </View>
 
           <TouchableOpacity
@@ -411,7 +640,7 @@ const LoginScreen = () => {
 
           <TouchableOpacity
             style={styles.mainButton}
-            onPress={handleAcessarAdmin}
+            onPress={formLogin.handleSubmit(onAcessarAdmin)}
             activeOpacity={0.8}
             disabled={isLoading}
           >
@@ -441,7 +670,9 @@ const LoginScreen = () => {
           <Text style={styles.cardTitle}>Verificação de Segurança</Text>
           <Text style={styles.codeHelperText}>
             Enviamos um código de 6 dígitos para o e-mail:{"\n"}
-            <Text style={{ fontWeight: "bold" }}>{email}</Text>
+            <Text style={{ fontWeight: "bold" }}>
+              {formLogin.getValues("email")}
+            </Text>
           </Text>
 
           <View style={styles.otpContainer}>
@@ -461,7 +692,6 @@ const LoginScreen = () => {
               value={code2FA}
               onChangeText={setCode2FA}
               keyboardType="number-pad"
-              placeholderTextColor="#999"
               maxLength={6}
               caretHidden={true}
               autoFocus={true}
@@ -502,31 +732,55 @@ const LoginScreen = () => {
             você criar uma nova senha.
           </Text>
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="email-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="E-mail Institucional"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+          <View style={{ marginBottom: 15 }}>
+            <View
+              style={[
+                styles.inputContainer,
+                formRecovery.formState.errors.email && {
+                  borderColor: COLORS.vermelhoPrincipal,
+                  borderWidth: 1,
+                  marginBottom: 0,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="email-outline"
+                size={20}
+                color={COLORS.textoSecundario}
+                style={styles.icon}
+              />
+              <Controller
+                control={formRecovery.control}
+                name="email"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="E-mail Institucional"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={value}
+                    onChangeText={onChange}
+                  />
+                )}
+              />
+            </View>
+            {formRecovery.formState.errors.email && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                  marginLeft: 5,
+                }}
+              >
+                {formRecovery.formState.errors.email.message}
+              </Text>
+            )}
           </View>
 
           <TouchableOpacity
             style={styles.mainButton}
-            onPress={() => {
-              mostrarAlerta(
-                "E-mail Enviado!",
-                "Verifique sua caixa de entrada.",
-                "sucesso",
-                () => switchViewAnimada("login"),
-              );
-            }}
+            onPress={formRecovery.handleSubmit(onRecuperarSenha)}
             activeOpacity={0.8}
           >
             <Text style={styles.mainButtonText}>Enviar Instruções</Text>
@@ -575,9 +829,7 @@ const LoginScreen = () => {
         tipo={alertConfig.tipo}
         onClose={() => {
           setAlertVisible(false);
-          if (alertConfig.onCloseAcao) {
-            alertConfig.onCloseAcao();
-          }
+          if (alertConfig.onCloseAcao) alertConfig.onCloseAcao();
         }}
       />
     </KeyboardAvoidingView>

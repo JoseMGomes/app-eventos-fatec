@@ -13,12 +13,15 @@ import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageUsersScreen.styles";
 import { userService } from "../../../../services/userService";
 import CustomAlert from "../../../../components/CustomAlert";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { userSchema, UserFormData } from "../../../../validations/schemas";
 
 const OPCOES_NIVEL = [
   { label: "Auxiliar Docente", value: "AUXILIAR" },
   { label: "Administrador", value: "ADMIN" },
   { label: "Coordenador", value: "COORDENADOR" },
-];
+] as const;
 
 const getRoleColor = (role: string) => {
   switch (role) {
@@ -43,10 +46,27 @@ const ManageUsersScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [usuarioEmEdicao, setUsuarioEmEdicao] = useState<string | null>(null);
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-  const [nivelSelecionado, setNivelSelecionado] = useState("AUXILIAR");
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    setError,
+    formState: { errors },
+  } = useForm<UserFormData>({
+    resolver: zodResolver(userSchema),
+    defaultValues: {
+      nome: "",
+      email: "",
+      senha: "",
+      role: "AUXILIAR",
+    },
+  });
+
+  const nivelSelecionado = watch("role");
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -55,28 +75,10 @@ const ManageUsersScreen = () => {
     onConfirm?: () => void;
     textoConfirmar?: string;
     textoCancelar?: string;
-  }>({
-    title: "",
-    message: "",
-    tipo: "aviso",
-  });
+  }>({ title: "", message: "", tipo: "aviso" });
 
-  const mostrarAlerta = (
-    title: string,
-    message: string,
-    tipo: "sucesso" | "erro" | "aviso",
-    onConfirm?: () => void,
-    textoConfirmar = "OK",
-    textoCancelar = "Cancelar",
-  ) => {
-    setAlertConfig({
-      title,
-      message,
-      tipo,
-      onConfirm,
-      textoConfirmar,
-      textoCancelar,
-    });
+  const mostrarAlerta = (title: string, message: string, tipo: "sucesso" | "erro" | "aviso", onConfirm?: () => void, textoConfirmar = "OK", textoCancelar = "Cancelar") => {
+    setAlertConfig({ title, message, tipo, onConfirm, textoConfirmar, textoCancelar });
     setAlertVisible(true);
   };
 
@@ -91,21 +93,10 @@ const ManageUsersScreen = () => {
       setUsuarios(response.data);
     } catch (error: any) {
       console.warn("Erro ao carregar usuários:", error);
-      if (
-        !error.response &&
-        (error.request || error.message === "Network Error")
-      ) {
-        mostrarAlerta(
-          "Sem Conexão",
-          "Não foi possível carregar a lista de usuários. Verifique a rede.",
-          "erro",
-        );
+      if (!error.response && (error.request || error.message === "Network Error")) {
+        mostrarAlerta("Sem Conexão", "Não foi possível carregar a lista de usuários. Verifique a rede.", "erro");
       } else {
-        mostrarAlerta(
-          "Erro",
-          "Ocorreu um problema ao buscar a lista de usuários.",
-          "erro",
-        );
+        mostrarAlerta("Erro", "Ocorreu um problema ao buscar a lista de usuários.", "erro");
       }
     } finally {
       setIsLoading(false);
@@ -114,38 +105,31 @@ const ManageUsersScreen = () => {
 
   const abrirModalCriacao = () => {
     setUsuarioEmEdicao(null);
-    setNome("");
-    setEmail("");
-    setSenha("");
-    setNivelSelecionado("AUXILIAR");
     setMostrarSenha(false);
+    reset({ nome: "", email: "", senha: "", role: "AUXILIAR" }); 
     setModalVisible(true);
   };
 
   const abrirModalEdicao = (user: any) => {
     setUsuarioEmEdicao(user.id);
-    setNome(user.name);
-    setEmail(user.email);
-    setSenha("");
-    setNivelSelecionado(user.role);
+    reset({
+      nome: user.name,
+      email: user.email,
+      senha: "", 
+      role: user.role,
+    });
     setModalVisible(true);
   };
 
   const fecharModal = () => {
     setModalVisible(false);
+    reset();
+    setUsuarioEmEdicao(null);
   };
 
-  const handleSalvarUsuario = async () => {
-    if (!nome.trim() || !email.trim()) {
-      mostrarAlerta("Atenção", "Preencha os campos de Nome e E-mail.", "aviso");
-      return;
-    }
-    if (!usuarioEmEdicao && !senha.trim()) {
-      mostrarAlerta(
-        "Atenção",
-        "A senha é obrigatória para criar um novo usuário.",
-        "aviso",
-      );
+  const onSalvarUsuario = async (data: UserFormData) => {
+    if (!usuarioEmEdicao && (!data.senha || data.senha.trim() === "")) {
+      setError("senha", { type: "manual", message: "A senha é obrigatória para criar um novo usuário." });
       return;
     }
 
@@ -154,17 +138,17 @@ const ManageUsersScreen = () => {
     try {
       if (usuarioEmEdicao) {
         await userService.update(usuarioEmEdicao, {
-          name: nome.trim(),
-          email: email.trim().toLowerCase(),
-          role: nivelSelecionado,
+          name: data.nome.trim(),
+          email: data.email.trim().toLowerCase(),
+          role: data.role,
         });
         mostrarAlerta("Sucesso", "Usuário atualizado com sucesso!", "sucesso");
       } else {
         await userService.create({
-          name: nome.trim(),
-          email: email.trim().toLowerCase(),
-          password: senha,
-          role: nivelSelecionado,
+          name: data.nome.trim(),
+          email: data.email.trim().toLowerCase(),
+          password: data.senha,
+          role: data.role,
         });
         mostrarAlerta("Sucesso", "Novo usuário criado com sucesso!", "sucesso");
       }
@@ -176,14 +160,11 @@ const ManageUsersScreen = () => {
       let msg = "Não foi possível salvar os dados do usuário.";
 
       if (error.response) {
-        msg =
-          error.response.data?.message ||
-          "O servidor recusou o cadastro. Verifique se o e-mail já existe.";
+        msg = error.response.data?.message || "O servidor recusou o cadastro. Verifique se o e-mail já existe.";
       } else if (error.request || error.message === "Network Error") {
         tituloErro = "Sem Conexão";
         msg = "Falha de conexão com a API. Tente novamente.";
       }
-
       mostrarAlerta(tituloErro, msg, "erro");
     } finally {
       setIsSaving(false);
@@ -208,13 +189,11 @@ const ManageUsersScreen = () => {
           let msg = "Não foi possível excluir o usuário no momento.";
 
           if (error.response) {
-            msg =
-              error.response.data?.message || "O servidor recusou a exclusão.";
+            msg = error.response.data?.message || "O servidor recusou a exclusão.";
           } else if (error.request || error.message === "Network Error") {
             tituloErro = "Sem Conexão";
             msg = "Falha de rede. Verifique sua internet.";
           }
-
           mostrarAlerta(tituloErro, msg, "erro");
         }
       },
@@ -229,29 +208,16 @@ const ManageUsersScreen = () => {
       <Text style={styles.userEmail}>{item.email}</Text>
 
       <View style={styles.cardFooter}>
-        <View
-          style={[
-            styles.roleBadge,
-            { backgroundColor: getRoleColor(item.role) },
-          ]}
-        >
+        <View style={[styles.roleBadge, { backgroundColor: getRoleColor(item.role) }]}>
           <Text style={styles.roleText}>{getRoleLabel(item.role)}</Text>
         </View>
 
         <View style={styles.actionsRow}>
           <TouchableOpacity onPress={() => abrirModalEdicao(item)}>
-            <MaterialCommunityIcons
-              name="pencil"
-              size={22}
-              color={COLORS.textoSecundario}
-            />
+            <MaterialCommunityIcons name="pencil" size={22} color={COLORS.textoSecundario} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleDelete(item)}>
-            <MaterialCommunityIcons
-              name="trash-can"
-              size={22}
-              color={COLORS.vermelhoPrincipal}
-            />
+            <MaterialCommunityIcons name="trash-can" size={22} color={COLORS.vermelhoPrincipal} />
           </TouchableOpacity>
         </View>
       </View>
@@ -265,19 +231,13 @@ const ManageUsersScreen = () => {
       <View style={styles.header}>
         <Text style={styles.title}>Usuários ({usuarios.length})</Text>
         <TouchableOpacity style={styles.addButton} onPress={abrirModalCriacao}>
-          <MaterialCommunityIcons
-            name="account-plus"
-            size={20}
-            color={COLORS.branco}
-          />
+          <MaterialCommunityIcons name="account-plus" size={20} color={COLORS.branco} />
           <Text style={styles.addButtonText}>Criar novo</Text>
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
         </View>
       ) : (
@@ -288,13 +248,7 @@ const ManageUsersScreen = () => {
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Text
-              style={{
-                textAlign: "center",
-                color: COLORS.textoSecundario,
-                marginTop: 20,
-              }}
-            >
+            <Text style={{ textAlign: "center", color: COLORS.textoSecundario, marginTop: 20 }}>
               Nenhum usuário encontrado.
             </Text>
           }
@@ -316,68 +270,78 @@ const ManageUsersScreen = () => {
                 </Text>
               </View>
               <TouchableOpacity onPress={fecharModal} disabled={isSaving}>
-                <MaterialCommunityIcons
-                  name="close-circle-outline"
-                  size={28}
-                  color={COLORS.vermelhoPrincipal}
-                />
+                <MaterialCommunityIcons name="close-circle-outline" size={28} color={COLORS.vermelhoPrincipal} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Nome</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ex: João Silva"
-                  placeholderTextColor="#999"
-                  value={nome}
-                  onChangeText={setNome}
-                  editable={!isSaving}
+              <View style={[styles.inputWrapper, errors.nome && { borderColor: COLORS.vermelhoPrincipal, borderWidth: 1 }]}>
+                <Controller
+                  control={control}
+                  name="nome"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Ex: João Silva"
+                      placeholderTextColor="#999"
+                      value={value}
+                      onChangeText={onChange}
+                      editable={!isSaving}
+                    />
+                  )}
                 />
               </View>
+              {errors.nome && <Text style={{ color: COLORS.vermelhoPrincipal, fontSize: 12, marginTop: 4 }}>{errors.nome.message}</Text>}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>E-mail</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="email@fatec.sp.gov.br"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholderTextColor="#999"
-                  value={email}
-                  onChangeText={setEmail}
-                  editable={!isSaving}
+              <View style={[styles.inputWrapper, errors.email && { borderColor: COLORS.vermelhoPrincipal, borderWidth: 1 }]}>
+                <Controller
+                  control={control}
+                  name="email"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      style={styles.input}
+                      placeholder="email@fatec.sp.gov.br"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      placeholderTextColor="#999"
+                      value={value}
+                      onChangeText={onChange}
+                      editable={!isSaving}
+                    />
+                  )}
                 />
               </View>
+              {errors.email && <Text style={{ color: COLORS.vermelhoPrincipal, fontSize: 12, marginTop: 4 }}>{errors.email.message}</Text>}
             </View>
 
             {!isEditando && (
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Senha</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="********"
-                    placeholderTextColor="#999"
-                    secureTextEntry={!mostrarSenha}
-                    value={senha}
-                    onChangeText={setSenha}
-                    editable={!isSaving}
+                <View style={[styles.inputWrapper, errors.senha && { borderColor: COLORS.vermelhoPrincipal, borderWidth: 1 }]}>
+                  <Controller
+                    control={control}
+                    name="senha"
+                    render={({ field: { onChange, value } }) => (
+                      <TextInput
+                        style={styles.input}
+                        placeholder="********"
+                        placeholderTextColor="#999"
+                        secureTextEntry={!mostrarSenha}
+                        value={value}
+                        onChangeText={onChange}
+                        editable={!isSaving}
+                      />
+                    )}
                   />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setMostrarSenha(!mostrarSenha)}
-                  >
-                    <MaterialCommunityIcons
-                      name={mostrarSenha ? "eye-off" : "eye"}
-                      size={22}
-                      color={COLORS.vermelhoPrincipal}
-                    />
+                  <TouchableOpacity style={styles.eyeIcon} onPress={() => setMostrarSenha(!mostrarSenha)}>
+                    <MaterialCommunityIcons name={mostrarSenha ? "eye-off" : "eye"} size={22} color={COLORS.vermelhoPrincipal} />
                   </TouchableOpacity>
                 </View>
+                {errors.senha && <Text style={{ color: COLORS.vermelhoPrincipal, fontSize: 12, marginTop: 4 }}>{errors.senha.message}</Text>}
               </View>
             )}
 
@@ -391,14 +355,13 @@ const ManageUsersScreen = () => {
                       styles.roleChip,
                       nivelSelecionado === opcao.value && styles.roleChipActive,
                     ]}
-                    onPress={() => setNivelSelecionado(opcao.value)}
+                    onPress={() => setValue("role", opcao.value)}
                     disabled={isSaving}
                   >
                     <Text
                       style={[
                         styles.roleChipText,
-                        nivelSelecionado === opcao.value &&
-                          styles.roleChipTextActive,
+                        nivelSelecionado === opcao.value && styles.roleChipTextActive,
                       ]}
                     >
                       {opcao.label}
@@ -410,7 +373,7 @@ const ManageUsersScreen = () => {
 
             <TouchableOpacity
               style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
-              onPress={handleSalvarUsuario}
+              onPress={handleSubmit(onSalvarUsuario)}
               disabled={isSaving}
             >
               {isSaving ? (

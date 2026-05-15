@@ -20,6 +20,12 @@ import { styles } from "./CreateEventScreen.styles";
 import { eventService } from "../../../services/eventService";
 import { api } from "../../../factory/api";
 import CustomAlert from "../../../components/CustomAlert";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  createEventSchema,
+  CreateEventFormData,
+} from "../../../validations/schemas";
 
 LocaleConfig.locales["pt-br"] = {
   monthNames: [
@@ -98,38 +104,56 @@ const CreateEventScreen = () => {
   const [locais, setLocais] = useState<any[]>([]);
   const [datasLivres, setDatasLivres] = useState<string[]>([]);
   const [markedDates, setMarkedDates] = useState<any>({});
-  const [blocosDeTempo, setBlocosDeTempo] = useState<any[]>([]); // Guarda os blocos brutos da API
+  const [blocosDeTempo, setBlocosDeTempo] = useState<any[]>([]);
   const [horariosInicioLivres, setHorariosInicioLivres] = useState<any[]>([]);
   const [horariosFimLivres, setHorariosFimLivres] = useState<any[]>([]);
-  const [nome, setNome] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [limiteInscricoes, setLimiteInscricoes] = useState("");
-  const [palestrante, setPalestrante] = useState("");
-  const [eventoRestrito, setEventoRestrito] = useState(false);
-  const [localId, setLocalId] = useState<number | null>(null);
-  const [data, setData] = useState("");
-  const [horaInicio, setHoraInicio] = useState("");
-  const [horaFim, setHoraFim] = useState("");
-  const [cursoId, setCursoId] = useState<number | null>(null);
-  const [semestre, setSemestre] = useState("");
-  const [categoriaId, setCategoriaId] = useState<number | null>(null);
   const [imagemUri, setImagemUri] = useState<string | null>(null);
   const [modalSelecaoVisible, setModalSelecaoVisible] = useState(false);
   const [modalCalendarioVisible, setModalCalendarioVisible] = useState(false);
   const [tipoSelecao, setTipoSelecao] = useState<
     "curso" | "categoria" | "local" | "semestre" | "horaInicio" | "horaFim"
   >("curso");
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<CreateEventFormData>({
+    resolver: zodResolver(createEventSchema),
+    defaultValues: {
+      nome: "",
+      localId: 0,
+      data: "",
+      horaInicio: "",
+      horaFim: "",
+      categoriaId: 0,
+      cursoId: 0,
+      semestre: "",
+      limiteInscricoes: "",
+      palestrante: "",
+      eventoRestrito: false,
+      descricao: "",
+    },
+  });
+
+  const localId = watch("localId");
+  const data = watch("data");
+  const horaInicio = watch("horaInicio");
+  const horaFim = watch("horaFim");
+  const cursoId = watch("cursoId");
+  const categoriaId = watch("categoriaId");
+  const semestre = watch("semestre");
+  const eventoRestrito = watch("eventoRestrito");
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
     message: string;
     tipo: "sucesso" | "erro" | "aviso";
     onCloseAcao?: () => void;
-  }>({
-    title: "",
-    message: "",
-    tipo: "aviso",
-  });
+  }>({ title: "", message: "", tipo: "aviso" });
 
   const mostrarAlerta = (
     title: string,
@@ -161,12 +185,12 @@ const CreateEventScreen = () => {
   };
 
   useEffect(() => {
-    if (localId) {
-      setData("");
-      setHoraInicio("");
-      setHoraFim("");
-      const localSelecionado = locais.find((l) => l.id === localId);
+    if (localId && localId !== 0) {
+      setValue("data", "");
+      setValue("horaInicio", "");
+      setValue("horaFim", "");
 
+      const localSelecionado = locais.find((l) => l.id === localId);
       if (localSelecionado?.name.toLowerCase() === "outros") {
         setDatasLivres(["OUTROS"]);
         setMarkedDates({});
@@ -192,12 +216,12 @@ const CreateEventScreen = () => {
           setMarkedDates({});
         });
     }
-  }, [localId]);
+  }, [localId, locais, setValue]);
 
   useEffect(() => {
-    if (localId && data) {
-      setHoraInicio("");
-      setHoraFim("");
+    if (localId && localId !== 0 && data) {
+      setValue("horaInicio", "");
+      setValue("horaFim", "");
       const localSelecionado = locais.find((l) => l.id === localId);
 
       const processarBlocos = (blocos: any[]) => {
@@ -210,7 +234,6 @@ const CreateEventScreen = () => {
             (_, i) => formatTime(s + i * 30),
           );
         });
-
         const unicos = [...new Set(slotsIniciais)].map((h) => ({
           id: h,
           name: h,
@@ -227,14 +250,13 @@ const CreateEventScreen = () => {
           .catch(() => setHorariosInicioLivres([]));
       }
     }
-  }, [localId, data]);
+  }, [localId, data, locais, setValue]);
 
   useEffect(() => {
     if (horaInicio && blocosDeTempo.length > 0) {
-      setHoraFim("");
+      setValue("horaFim", "");
       const minInicio = parseTime(horaInicio);
       const m0 = minInicio + 30;
-
       const slotsFinais = blocosDeTempo.flatMap(({ start, end }) => {
         const s = parseTime(start);
         const eMax = parseTime(end);
@@ -250,7 +272,7 @@ const CreateEventScreen = () => {
       const unicos = [...new Set(slotsFinais)].map((h) => ({ id: h, name: h }));
       setHorariosFimLivres(unicos);
     }
-  }, [horaInicio, blocosDeTempo]);
+  }, [horaInicio, blocosDeTempo, setValue]);
 
   const escolherImagem = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -271,46 +293,52 @@ const CreateEventScreen = () => {
     if (!result.canceled) setImagemUri(result.assets[0].uri);
   };
 
-  const handleSalvarEvento = async () => {
-    if (!nome || !data || !horaInicio || !horaFim || !localId || !imagemUri) {
-      mostrarAlerta(
-        "Atenção",
-        "Preencha os campos obrigatórios e adicione a imagem da capa.",
-        "aviso",
-      );
+  const onSubmitValido = async (formData: CreateEventFormData) => {
+    if (!imagemUri) {
+      mostrarAlerta("Atenção", "Adicione a imagem de capa do evento.", "aviso");
       return;
     }
 
     setIsSaving(true);
     try {
-      const formData = new FormData();
-      formData.append("name", nome.trim());
-      formData.append("description", descricao.trim() || "Sem descrição");
-      formData.append("maxParticipants", limiteInscricoes || "100");
-      formData.append("isRestricted", String(eventoRestrito));
-      formData.append("locationId", String(localId));
-      formData.append("speakerName", palestrante.trim() || "A definir");
-      formData.append("startDate", `${data}T00:00:00Z`);
-      formData.append("startTime", `${data}T${horaInicio}:00Z`);
-      formData.append("endTime", `${data}T${horaFim}:00Z`);
+      const dataPayload = new FormData();
+      dataPayload.append("name", formData.nome.trim());
+      dataPayload.append(
+        "description",
+        formData.descricao?.trim() || "Sem descrição",
+      );
+      dataPayload.append("maxParticipants", formData.limiteInscricoes || "100");
+      dataPayload.append("isRestricted", String(formData.eventoRestrito));
+      dataPayload.append("locationId", String(formData.localId));
+      dataPayload.append(
+        "speakerName",
+        formData.palestrante?.trim() || "A definir",
+      );
+      dataPayload.append("startDate", `${formData.data}T00:00:00Z`);
+      dataPayload.append(
+        "startTime",
+        `${formData.data}T${formData.horaInicio}:00Z`,
+      );
+      dataPayload.append("endTime", `${formData.data}T${formData.horaFim}:00Z`);
 
-      if (cursoId) formData.append("courseId", String(cursoId));
-      if (semestre) formData.append("semester", semestre);
-      if (categoriaId) formData.append("categoryId", String(categoriaId));
+      if (formData.cursoId && formData.cursoId !== 0)
+        dataPayload.append("courseId", String(formData.cursoId));
+      if (formData.semestre) dataPayload.append("semester", formData.semestre);
+      if (formData.categoriaId && formData.categoriaId !== 0)
+        dataPayload.append("categoryId", String(formData.categoriaId));
 
       const filename = imagemUri.split("/").pop();
       const match = /\.(\w+)$/.exec(filename || "");
-      formData.append("image", {
+      dataPayload.append("image", {
         uri: imagemUri,
         name: filename,
         type: match ? `image/${match[1]}` : `image`,
       } as any);
 
-      await eventService.createEvent(formData);
-
-      mostrarAlerta("Sucesso!", "Evento criado com sucesso.", "sucesso", () => {
-        navigation.goBack();
-      });
+      await eventService.createEvent(dataPayload);
+      mostrarAlerta("Sucesso!", "Evento criado com sucesso.", "sucesso", () =>
+        navigation.goBack(),
+      );
     } catch (error: any) {
       let tituloErro = "Falha ao Criar";
       let msg = "Não foi possível criar o evento no momento.";
@@ -323,7 +351,6 @@ const CreateEventScreen = () => {
         tituloErro = "Sem Conexão";
         msg = "Falha de conexão. Verifique sua internet.";
       }
-
       mostrarAlerta(tituloErro, msg, "erro");
     } finally {
       setIsSaving(false);
@@ -334,6 +361,35 @@ const CreateEventScreen = () => {
     setTipoSelecao(tipo);
     setModalSelecaoVisible(true);
   };
+
+  const selecionarItem = (item: any) => {
+    switch (tipoSelecao) {
+      case "curso":
+        setValue("cursoId", item.id);
+        setValue("semestre", "");
+        setValue("eventoRestrito", true);
+        break;
+      case "categoria":
+        setValue("categoriaId", item.id);
+        break;
+      case "local":
+        setValue("localId", item.id);
+        break;
+      case "semestre":
+        setValue("semestre", item.id);
+        break;
+      case "horaInicio":
+        setValue("horaInicio", item.id);
+        break;
+      case "horaFim":
+        setValue("horaFim", item.id);
+        break;
+    }
+    setModalSelecaoVisible(false);
+  };
+
+  const ehLocalOutros =
+    locais.find((l) => l.id === localId)?.name.toLowerCase() === "outros";
 
   const getListaSelecao = () => {
     switch (tipoSelecao) {
@@ -353,35 +409,6 @@ const CreateEventScreen = () => {
         return [];
     }
   };
-
-  const selecionarItem = (item: any) => {
-    switch (tipoSelecao) {
-      case "curso":
-        setCursoId(item.id);
-        setSemestre("");
-        setEventoRestrito(true);
-        break;
-      case "categoria":
-        setCategoriaId(item.id);
-        break;
-      case "local":
-        setLocalId(item.id);
-        break;
-      case "semestre":
-        setSemestre(item.id);
-        break;
-      case "horaInicio":
-        setHoraInicio(item.id);
-        break;
-      case "horaFim":
-        setHoraFim(item.id);
-        break;
-    }
-    setModalSelecaoVisible(false);
-  };
-
-  const ehLocalOutros =
-    locais.find((l) => l.id === localId)?.name.toLowerCase() === "outros";
 
   return (
     <View style={styles.container}>
@@ -416,19 +443,48 @@ const CreateEventScreen = () => {
         <View style={styles.formSection}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Nome do Evento *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Hackathon FATEC"
-              placeholderTextColor="#999"
-              value={nome}
-              onChangeText={setNome}
+            <Controller
+              control={control}
+              name="nome"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={[
+                    styles.input,
+                    errors.nome && {
+                      borderColor: COLORS.vermelhoPrincipal,
+                      borderWidth: 1,
+                    },
+                  ]}
+                  placeholder="Ex: Hackathon FATEC"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                />
+              )}
             />
+            {errors.nome && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                }}
+              >
+                {errors.nome.message}
+              </Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Sala / Localização *</Text>
             <TouchableOpacity
-              style={styles.input}
+              style={[
+                styles.input,
+                errors.localId && {
+                  borderColor: COLORS.vermelhoPrincipal,
+                  borderWidth: 1,
+                },
+              ]}
               onPress={() => abrirSelecao("local")}
             >
               <Text
@@ -443,12 +499,30 @@ const CreateEventScreen = () => {
                   : "Selecione a sala..."}
               </Text>
             </TouchableOpacity>
+            {errors.localId && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                }}
+              >
+                {errors.localId.message}
+              </Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Data Disponível *</Text>
             <TouchableOpacity
-              style={[styles.input, !localId && styles.inputDisabled]}
+              style={[
+                styles.input,
+                !localId && styles.inputDisabled,
+                errors.data && {
+                  borderColor: COLORS.vermelhoPrincipal,
+                  borderWidth: 1,
+                },
+              ]}
               onPress={() => {
                 if (!localId) return;
                 ehLocalOutros
@@ -468,15 +542,32 @@ const CreateEventScreen = () => {
                     : "Escolha a sala primeiro"}
               </Text>
             </TouchableOpacity>
+            {errors.data && (
+              <Text
+                style={{
+                  color: COLORS.vermelhoPrincipal,
+                  fontSize: 12,
+                  marginTop: 4,
+                }}
+              >
+                {errors.data.message}
+              </Text>
+            )}
           </View>
 
           {ehLocalOutros && !data && (
-            <TextInput
-              style={[styles.input, { marginTop: -15, marginBottom: 15 }]}
-              placeholder="Digite a data (YYYY-MM-DD)"
-              placeholderTextColor="#999"
-              value={data}
-              onChangeText={setData}
+            <Controller
+              control={control}
+              name="data"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={[styles.input, { marginTop: -15, marginBottom: 15 }]}
+                  placeholder="Digite a data (YYYY-MM-DD)"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                />
+              )}
             />
           )}
 
@@ -484,7 +575,14 @@ const CreateEventScreen = () => {
             <View style={[styles.inputGroup, { flex: 1 }]}>
               <Text style={styles.label}>Início *</Text>
               <TouchableOpacity
-                style={[styles.input, !data && styles.inputDisabled]}
+                style={[
+                  styles.input,
+                  !data && styles.inputDisabled,
+                  errors.horaInicio && {
+                    borderColor: COLORS.vermelhoPrincipal,
+                    borderWidth: 1,
+                  },
+                ]}
                 onPress={() => data && abrirSelecao("horaInicio")}
               >
                 <Text
@@ -497,12 +595,30 @@ const CreateEventScreen = () => {
                   {horaInicio || "HH:MM"}
                 </Text>
               </TouchableOpacity>
+              {errors.horaInicio && (
+                <Text
+                  style={{
+                    color: COLORS.vermelhoPrincipal,
+                    fontSize: 12,
+                    marginTop: 4,
+                  }}
+                >
+                  {errors.horaInicio.message}
+                </Text>
+              )}
             </View>
 
             <View style={[styles.inputGroup, { flex: 1 }]}>
               <Text style={styles.label}>Término *</Text>
               <TouchableOpacity
-                style={[styles.input, !horaInicio && styles.inputDisabled]}
+                style={[
+                  styles.input,
+                  !horaInicio && styles.inputDisabled,
+                  errors.horaFim && {
+                    borderColor: COLORS.vermelhoPrincipal,
+                    borderWidth: 1,
+                  },
+                ]}
                 onPress={() => horaInicio && abrirSelecao("horaFim")}
               >
                 <Text
@@ -515,6 +631,17 @@ const CreateEventScreen = () => {
                   {horaFim || "HH:MM"}
                 </Text>
               </TouchableOpacity>
+              {errors.horaFim && (
+                <Text
+                  style={{
+                    color: COLORS.vermelhoPrincipal,
+                    fontSize: 12,
+                    marginTop: 4,
+                  }}
+                >
+                  {errors.horaFim.message}
+                </Text>
+              )}
             </View>
           </View>
 
@@ -582,24 +709,36 @@ const CreateEventScreen = () => {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Limite de Inscrições</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: 50"
-              placeholderTextColor="#999"
-              value={limiteInscricoes}
-              onChangeText={setLimiteInscricoes}
-              keyboardType="numeric"
+            <Controller
+              control={control}
+              name="limiteInscricoes"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: 50"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                  keyboardType="numeric"
+                />
+              )}
             />
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Palestrante / Responsável</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Prof. Silva"
-              placeholderTextColor="#999"
-              value={palestrante}
-              onChangeText={setPalestrante}
+            <Controller
+              control={control}
+              name="palestrante"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: Prof. Silva"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                />
+              )}
             />
           </View>
 
@@ -610,7 +749,7 @@ const CreateEventScreen = () => {
             <Switch
               trackColor={{ false: "#E0E0E0", true: "rgba(169, 0, 0, 0.5)" }}
               thumbColor={eventoRestrito ? COLORS.vermelhoPrincipal : "#f4f3f4"}
-              onValueChange={setEventoRestrito}
+              onValueChange={(val) => setValue("eventoRestrito", val)}
               value={eventoRestrito}
               disabled={!!cursoId}
             />
@@ -618,14 +757,20 @@ const CreateEventScreen = () => {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Descrição do Evento</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Escreva os detalhes aqui..."
-              placeholderTextColor="#999"
-              value={descricao}
-              onChangeText={setDescricao}
-              multiline
-              numberOfLines={5}
+            <Controller
+              control={control}
+              name="descricao"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Escreva os detalhes aqui..."
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                  multiline
+                  numberOfLines={5}
+                />
+              )}
             />
           </View>
         </View>
@@ -633,7 +778,7 @@ const CreateEventScreen = () => {
         <TouchableOpacity
           style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
           activeOpacity={0.8}
-          onPress={handleSalvarEvento}
+          onPress={handleSubmit(onSubmitValido)}
           disabled={isSaving}
         >
           {isSaving ? (
@@ -673,7 +818,7 @@ const CreateEventScreen = () => {
               minDate={new Date().toISOString().split("T")[0]}
               onDayPress={(day: any) => {
                 if (datasLivres.includes(day.dateString)) {
-                  setData(day.dateString);
+                  setValue("data", day.dateString);
                   setModalCalendarioVisible(false);
                 } else {
                   mostrarAlerta(
@@ -786,6 +931,7 @@ const CreateEventScreen = () => {
           </View>
         </View>
       </Modal>
+
       <CustomAlert
         visible={alertVisible}
         title={alertConfig.title}
@@ -793,9 +939,7 @@ const CreateEventScreen = () => {
         tipo={alertConfig.tipo}
         onClose={() => {
           setAlertVisible(false);
-          if (alertConfig.onCloseAcao) {
-            alertConfig.onCloseAcao();
-          }
+          if (alertConfig.onCloseAcao) alertConfig.onCloseAcao();
         }}
       />
     </View>

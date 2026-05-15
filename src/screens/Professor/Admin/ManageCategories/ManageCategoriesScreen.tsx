@@ -13,16 +13,35 @@ import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageCategoriesScreen.styles";
 import { categoryService } from "../../../../services/categoryService";
 import CustomAlert from "../../../../components/CustomAlert";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  simpleNameSchema,
+  SimpleNameFormData,
+} from "../../../../validations/schemas";
 
 const ManageCategoriesScreen = () => {
   const [categorias, setCategorias] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [nomeCategoria, setNomeCategoria] = useState("");
   const [categoriaEmEdicao, setCategoriaEmEdicao] = useState<string | null>(
     null,
   );
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<SimpleNameFormData>({
+    resolver: zodResolver(simpleNameSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -90,44 +109,34 @@ const ManageCategoriesScreen = () => {
 
   const abrirModalCriacao = () => {
     setCategoriaEmEdicao(null);
-    setNomeCategoria("");
+    reset({ name: "" });
     setModalVisible(true);
   };
 
   const abrirModalEdicao = (categoria: any) => {
     setCategoriaEmEdicao(categoria.id);
-    setNomeCategoria(categoria.name);
+    setValue("name", categoria.name);
     setModalVisible(true);
   };
 
   const fecharModal = () => {
     setModalVisible(false);
-    setNomeCategoria("");
+    reset({ name: "" });
     setCategoriaEmEdicao(null);
   };
 
-  const handleSalvarCategoria = async () => {
-    if (!nomeCategoria.trim()) {
-      mostrarAlerta(
-        "Atenção",
-        "Por favor, insira o nome da categoria.",
-        "aviso",
-      );
-      return;
-    }
-
+  const onSalvarCategoria = async (data: SimpleNameFormData) => {
     setIsSaving(true);
-
     try {
       if (categoriaEmEdicao) {
-        await categoryService.update(categoriaEmEdicao, nomeCategoria.trim());
+        await categoryService.update(categoriaEmEdicao, data.name.trim());
         mostrarAlerta(
           "Sucesso",
           "Categoria atualizada com sucesso!",
           "sucesso",
         );
       } else {
-        await categoryService.create(nomeCategoria.trim());
+        await categoryService.create(data.name.trim());
         mostrarAlerta("Sucesso", "Categoria criada com sucesso!", "sucesso");
       }
 
@@ -168,7 +177,6 @@ const ManageCategoriesScreen = () => {
           carregarCategorias();
         } catch (error: any) {
           setIsLoading(false);
-
           let tituloErro = "Erro ao Excluir";
           let msg = "Não foi possível excluir a categoria no momento.";
 
@@ -309,20 +317,43 @@ const ManageCategoriesScreen = () => {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Nome da Categoria</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex: Minicurso"
-                placeholderTextColor="#999"
-                value={nomeCategoria}
-                onChangeText={setNomeCategoria}
-                autoFocus
-                editable={!isSaving}
+              <Controller
+                control={control}
+                name="name"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      errors.name && {
+                        borderColor: COLORS.vermelhoPrincipal,
+                        borderWidth: 1,
+                      },
+                    ]}
+                    placeholder="Ex: Minicurso"
+                    placeholderTextColor="#999"
+                    value={value}
+                    onChangeText={onChange}
+                    autoFocus
+                    editable={!isSaving}
+                  />
+                )}
               />
+              {errors.name && (
+                <Text
+                  style={{
+                    color: COLORS.vermelhoPrincipal,
+                    fontSize: 12,
+                    marginTop: 4,
+                  }}
+                >
+                  {errors.name.message}
+                </Text>
+              )}
             </View>
 
             <TouchableOpacity
               style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
-              onPress={handleSalvarCategoria}
+              onPress={handleSubmit(onSalvarCategoria)}
               disabled={isSaving}
             >
               {isSaving ? (

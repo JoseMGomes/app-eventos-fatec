@@ -13,6 +13,12 @@ import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageCoursesScreen.styles";
 import { courseService } from "../../../../services/courseService";
 import CustomAlert from "../../../../components/CustomAlert";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  simpleNameSchema,
+  SimpleNameFormData,
+} from "../../../../validations/schemas";
 
 const formatarData = (dataIso: string) => {
   if (!dataIso) return "--/--/----";
@@ -31,8 +37,21 @@ const ManageCoursesScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [nomeCurso, setNomeCurso] = useState("");
   const [cursoEmEdicao, setCursoEmEdicao] = useState<string | null>(null);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<SimpleNameFormData>({
+    resolver: zodResolver(simpleNameSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -100,36 +119,31 @@ const ManageCoursesScreen = () => {
 
   const abrirModalCriacao = () => {
     setCursoEmEdicao(null);
-    setNomeCurso("");
+    reset({ name: "" });
     setModalVisible(true);
   };
 
   const abrirModalEdicao = (curso: any) => {
     setCursoEmEdicao(curso.id);
-    setNomeCurso(curso.name);
+    setValue("name", curso.name);
     setModalVisible(true);
   };
 
   const fecharModal = () => {
     setModalVisible(false);
-    setNomeCurso("");
+    reset({ name: "" });
     setCursoEmEdicao(null);
   };
 
-  const handleSalvarCurso = async () => {
-    if (!nomeCurso.trim()) {
-      mostrarAlerta("Atenção", "Por favor, insira o nome do curso.", "aviso");
-      return;
-    }
-
+  const onSalvarCurso = async (data: SimpleNameFormData) => {
     setIsSaving(true);
 
     try {
       if (cursoEmEdicao) {
-        await courseService.update(cursoEmEdicao, { name: nomeCurso.trim() });
+        await courseService.update(cursoEmEdicao, { name: data.name.trim() });
         mostrarAlerta("Sucesso", "Curso atualizado com sucesso!", "sucesso");
       } else {
-        await courseService.create({ name: nomeCurso.trim() });
+        await courseService.create({ name: data.name.trim() });
         mostrarAlerta("Sucesso", "Novo curso criado com sucesso!", "sucesso");
       }
 
@@ -296,20 +310,43 @@ const ManageCoursesScreen = () => {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Nome do Curso</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex: Gestão Financeira"
-                placeholderTextColor="#999"
-                value={nomeCurso}
-                onChangeText={setNomeCurso}
-                editable={!isSaving}
-                autoFocus
+              <Controller
+                control={control}
+                name="name"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      errors.name && {
+                        borderColor: COLORS.vermelhoPrincipal,
+                        borderWidth: 1,
+                      },
+                    ]}
+                    placeholder="Ex: Gestão Financeira"
+                    placeholderTextColor="#999"
+                    value={value}
+                    onChangeText={onChange}
+                    editable={!isSaving}
+                    autoFocus
+                  />
+                )}
               />
+              {errors.name && (
+                <Text
+                  style={{
+                    color: COLORS.vermelhoPrincipal,
+                    fontSize: 12,
+                    marginTop: 4,
+                  }}
+                >
+                  {errors.name.message}
+                </Text>
+              )}
             </View>
 
             <TouchableOpacity
               style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
-              onPress={handleSalvarCurso}
+              onPress={handleSubmit(onSalvarCurso)}
               disabled={isSaving}
             >
               {isSaving ? (

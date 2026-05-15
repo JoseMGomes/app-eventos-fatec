@@ -12,13 +12,28 @@ import { COLORS } from "../../../styles/colors";
 import { styles } from "./EditProfileScreen.styles";
 import { authService } from "../../../services/authService";
 import CustomAlert from "../../../components/CustomAlert";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { profileSchema, ProfileFormData } from "../../../validations/schemas";
 
 const EditProfileScreen = () => {
   const navigation = useNavigation();
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      nome: "",
+      email: "",
+    },
+  });
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -46,27 +61,16 @@ const EditProfileScreen = () => {
       try {
         const response = await authService.getMe();
         if (response.data) {
-          setNome(response.data.name || "");
-          setEmail(response.data.email || "");
+          setValue("nome", response.data.name || "");
+          setValue("email", response.data.email || "");
         }
       } catch (error: any) {
         console.warn("Erro ao buscar dados do perfil:", error);
 
-        if (
-          !error.response &&
-          (error.request || error.message === "Network Error")
-        ) {
-          mostrarAlerta(
-            "Sem Conexão",
-            "Não foi possível carregar seus dados. Verifique a internet.",
-            "erro",
-          );
+        if (!error.response && (error.request || error.message === "Network Error")) {
+          mostrarAlerta("Sem Conexão", "Verifique a internet para carregar seu perfil.", "erro");
         } else {
-          mostrarAlerta(
-            "Erro",
-            "Ocorreu um problema ao buscar os dados do seu perfil.",
-            "erro",
-          );
+          mostrarAlerta("Erro", "Não foi possível buscar seus dados atuais.", "erro");
         }
       } finally {
         setIsLoading(false);
@@ -74,23 +78,14 @@ const EditProfileScreen = () => {
     };
 
     carregarDados();
-  }, []);
+  }, [setValue]);
 
-  const handleSalvarPerfil = async () => {
-    if (!nome.trim() || !email.trim()) {
-      mostrarAlerta(
-        "Atenção",
-        "Os campos Nome e E-mail não podem ficar vazios.",
-        "aviso",
-      );
-      return;
-    }
-
+  const handleSalvarPerfil = async (data: ProfileFormData) => {
     setIsSaving(true);
 
     try {
       await authService.getCSRF();
-      await authService.updateProfile(nome.trim(), email.trim().toLowerCase());
+      await authService.updateProfile(data.nome.trim(), data.email.trim().toLowerCase());
       setIsSaving(false);
 
       mostrarAlerta(
@@ -101,18 +96,13 @@ const EditProfileScreen = () => {
       );
     } catch (error: any) {
       setIsSaving(false);
-
-      console.log(
-        "ERRO AO SALVAR PERFIL:",
-        error.response?.data || error.message,
-      );
+      console.log("ERRO AO SALVAR PERFIL:", error.response?.data || error.message);
 
       let tituloErro = "Erro ao Salvar";
       let msg = "Não foi possível atualizar os dados.";
 
       if (error.response) {
-        msg =
-          error.response.data?.message || "O servidor recusou a atualização.";
+        msg = error.response.data?.message || "O servidor recusou a atualização.";
       } else if (error.request || error.message === "Network Error") {
         tituloErro = "Sem Conexão";
         msg = "Falha de rede. Verifique sua internet e tente novamente.";
@@ -124,12 +114,7 @@ const EditProfileScreen = () => {
 
   if (isLoading) {
     return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
         <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
       </View>
     );
@@ -137,37 +122,57 @@ const EditProfileScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* CAMPO NOME */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Nome Completo</Text>
-          <TextInput
-            style={styles.input}
-            value={nome}
-            onChangeText={setNome}
-            placeholder="Digite seu nome"
-            placeholderTextColor="#999"
+          <Controller
+            control={control}
+            name="nome"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                style={[styles.input, errors.nome && { borderColor: COLORS.vermelhoPrincipal, borderWidth: 1 }]}
+                value={value}
+                onChangeText={onChange}
+                placeholder="Digite seu nome"
+                placeholderTextColor="#999"
+              />
+            )}
           />
+          {errors.nome && (
+            <Text style={{ color: COLORS.vermelhoPrincipal, fontSize: 12, marginTop: 4 }}>
+              {errors.nome.message}
+            </Text>
+          )}
         </View>
-
         <View style={styles.inputGroup}>
           <Text style={styles.label}>E-mail</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholder="Digite seu e-mail"
-            placeholderTextColor="#999"
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                style={[styles.input, errors.email && { borderColor: COLORS.vermelhoPrincipal, borderWidth: 1 }]}
+                value={value}
+                onChangeText={onChange}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="Digite seu e-mail"
+                placeholderTextColor="#999"
+              />
+            )}
           />
+          {errors.email && (
+            <Text style={{ color: COLORS.vermelhoPrincipal, fontSize: 12, marginTop: 4 }}>
+              {errors.email.message}
+            </Text>
+          )}
         </View>
 
         <TouchableOpacity
           style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
-          onPress={handleSalvarPerfil}
+          onPress={handleSubmit(handleSalvarPerfil)}
           activeOpacity={0.8}
           disabled={isSaving}
         >
