@@ -69,6 +69,7 @@ const ProfileScreen = () => {
     });
     setAlertVisible(true);
   };
+
   useEffect(() => {
     carregarDadosIniciais();
   }, []);
@@ -170,7 +171,7 @@ const ProfileScreen = () => {
       "Tem certeza que deseja sair do aplicativo?",
       "aviso",
       async () => {
-        await SecureStore.deleteItemAsync("perfil_aluno");
+        await SecureStore.deleteItemAsync("sessao_aluno_ativa");
         setAlertVisible(false);
         navigation.replace("Login" as any);
       },

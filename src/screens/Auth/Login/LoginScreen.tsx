@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -75,6 +75,21 @@ const LoginScreen = () => {
     setAlertVisible(true);
   };
 
+  useEffect(() => {
+    const verificarSessaoAtiva = async () => {
+      try {
+        const sessaoAluno =
+          await SecureStore.getItemAsync("sessao_aluno_ativa");
+        if (sessaoAluno === "true") {
+          navigation.replace("AlunoTabs" as any);
+        }
+      } catch (error) {
+        console.warn("Erro ao verificar sessão", error);
+      }
+    };
+    verificarSessaoAtiva();
+  }, []);
+
   const switchViewAnimada = (novaView: ViewState) => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -107,19 +122,47 @@ const LoginScreen = () => {
 
   const onAcessoAluno = async (data: AlunoAuthFormData) => {
     setIsLoading(true);
-    const perfil = {
-      nome: data.nomeUsuario.trim(),
-      email: data.emailUsuario.trim().toLowerCase(),
-      ra: data.raAluno.trim(),
-      instituicao: "FATEC",
-      tipo: "ALUNO",
-    };
-
     try {
-      await SecureStore.setItemAsync("perfil_aluno", JSON.stringify(perfil));
-      navigation.replace("AlunoTabs" as any);
+      const emailFormatado = data.emailUsuario.trim().toLowerCase();
+      const raFormatado = data.raAluno.trim();
+      const nomeFormatado = data.nomeUsuario.trim();
+
+      const perfilSalvoStr = await SecureStore.getItemAsync("perfil_aluno");
+
+      if (perfilSalvoStr) {
+        const perfilSalvo = JSON.parse(perfilSalvoStr);
+
+        if (
+          perfilSalvo.tipo === "ALUNO" &&
+          perfilSalvo.email === emailFormatado &&
+          perfilSalvo.ra === raFormatado
+        ) {
+          await SecureStore.setItemAsync("sessao_aluno_ativa", "true");
+          navigation.replace("AlunoTabs" as any);
+        } else {
+          mostrarAlerta(
+            "Credenciais Incorretas",
+            "O E-mail ou RA não correspondem à conta que está salva neste aparelho.",
+            "erro",
+          );
+        }
+      } else {
+        const novoPerfil = {
+          nome: nomeFormatado,
+          email: emailFormatado,
+          ra: raFormatado,
+          instituicao: "FATEC",
+          tipo: "ALUNO",
+        };
+        await SecureStore.setItemAsync(
+          "perfil_aluno",
+          JSON.stringify(novoPerfil),
+        );
+        await SecureStore.setItemAsync("sessao_aluno_ativa", "true");
+        navigation.replace("AlunoTabs" as any);
+      }
     } catch (error) {
-      mostrarAlerta("Erro", "Falha ao criar passaporte local.", "erro");
+      mostrarAlerta("Erro", "Falha ao processar os dados locais.", "erro");
     } finally {
       setIsLoading(false);
     }
@@ -127,19 +170,44 @@ const LoginScreen = () => {
 
   const onAcessoVisitante = async (data: VisitanteAuthFormData) => {
     setIsLoading(true);
-    const perfil = {
-      nome: data.nomeUsuario.trim(),
-      email: data.emailUsuario.trim().toLowerCase(),
-      ra: null,
-      instituicao: "Visitante Externo",
-      tipo: "VISITANTE",
-    };
-
     try {
-      await SecureStore.setItemAsync("perfil_aluno", JSON.stringify(perfil));
-      navigation.replace("AlunoTabs" as any);
+      const emailFormatado = data.emailUsuario.trim().toLowerCase();
+      const nomeFormatado = data.nomeUsuario.trim();
+
+      const perfilSalvoStr = await SecureStore.getItemAsync("perfil_aluno");
+
+      if (perfilSalvoStr) {
+        const perfilSalvo = JSON.parse(perfilSalvoStr);
+        if (
+          perfilSalvo.tipo === "VISITANTE" &&
+          perfilSalvo.email === emailFormatado
+        ) {
+          await SecureStore.setItemAsync("sessao_aluno_ativa", "true");
+          navigation.replace("AlunoTabs" as any);
+        } else {
+          mostrarAlerta(
+            "Credenciais Incorretas",
+            "Este e-mail não corresponde à conta de visitante salva neste aparelho.",
+            "erro",
+          );
+        }
+      } else {
+        const novoPerfil = {
+          nome: nomeFormatado,
+          email: emailFormatado,
+          ra: null,
+          instituicao: "Visitante Externo",
+          tipo: "VISITANTE",
+        };
+        await SecureStore.setItemAsync(
+          "perfil_aluno",
+          JSON.stringify(novoPerfil),
+        );
+        await SecureStore.setItemAsync("sessao_aluno_ativa", "true");
+        navigation.replace("AlunoTabs" as any);
+      }
     } catch (error) {
-      mostrarAlerta("Erro", "Falha ao criar passaporte local.", "erro");
+      mostrarAlerta("Erro", "Falha ao processar os dados locais.", "erro");
     } finally {
       setIsLoading(false);
     }
