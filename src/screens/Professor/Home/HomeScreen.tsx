@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; 
 import EventCard from "../../../components/EventCard";
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
@@ -25,6 +26,8 @@ type Props = {
 };
 
 const HomeScreen = ({ navigation }: Props) => {
+  const insets = useSafeAreaInsets(); 
+
   const [busca, setBusca] = useState("");
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todos");
   const [eventosApi, setEventosApi] = useState<any[]>([]);
@@ -159,9 +162,15 @@ const HomeScreen = ({ navigation }: Props) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cinzaFundo} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.cinzaFundo}
+        translucent
+      />
 
-      <View style={styles.header}>
+      <View
+        style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}
+      >
         <View
           style={{
             flexDirection: "row",
@@ -209,6 +218,7 @@ const HomeScreen = ({ navigation }: Props) => {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriasContainer}
+          keyboardShouldPersistTaps="handled" 
         >
           {CATEGORIAS.map((categoria, index) => (
             <TouchableOpacity
@@ -253,8 +263,12 @@ const HomeScreen = ({ navigation }: Props) => {
             />
           )}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={[
+            styles.listContainer,
+            { paddingBottom: Math.max(insets.bottom + 100, 120) },
+          ]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled" 
           ListEmptyComponent={() => (
             <Text style={styles.listaVazia}>Nenhum evento encontrado. 😢</Text>
           )}
@@ -263,13 +277,14 @@ const HomeScreen = ({ navigation }: Props) => {
 
       {(userRole === "ADMIN" || userRole === "COORDENADOR") && (
         <TouchableOpacity
-          style={styles.fab}
+          style={[styles.fab, { bottom: Math.max(insets.bottom + 20, 20) }]}
           onPress={() => navigation.navigate("CreateEvent" as any)}
           activeOpacity={0.8}
         >
           <MaterialCommunityIcons name="plus" size={30} color={COLORS.branco} />
         </TouchableOpacity>
       )}
+
       <CustomAlert
         visible={alertVisible}
         title={alertConfig.title}

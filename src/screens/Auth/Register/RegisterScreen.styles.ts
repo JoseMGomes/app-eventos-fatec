@@ -8,7 +8,6 @@ export const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.vermelhoPrincipal,
-    paddingTop: 60,
     paddingBottom: 30,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
@@ -28,7 +27,7 @@ export const styles = StyleSheet.create({
     textAlign: "center",
   },
   formContainer: {
-    flex: 1,
+    flexGrow: 1, 
     padding: 20,
     marginTop: -20,
   },

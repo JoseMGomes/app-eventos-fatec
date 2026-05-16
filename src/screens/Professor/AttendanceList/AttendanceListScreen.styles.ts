@@ -7,7 +7,8 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.cinzaFundo,
   },
   header: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
     backgroundColor: COLORS.branco,
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
@@ -16,6 +17,11 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 5,
     elevation: 3,
+  },
+  saudacao: {
+    fontSize: 16,
+    color: COLORS.textoSecundario,
+    marginBottom: 4,
   },
   title: {
     fontSize: 20,
@@ -72,7 +78,6 @@ export const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 20,
-    paddingBottom: 40,
   },
   studentCard: {
     flexDirection: "row",

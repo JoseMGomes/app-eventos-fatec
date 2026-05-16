@@ -1,7 +1,5 @@
-import { StyleSheet, Dimensions } from "react-native";
+import { StyleSheet } from "react-native";
 import { COLORS } from "../../../styles/colors";
-
-const { height } = Dimensions.get("window");
 
 export const styles = StyleSheet.create({
   container: {
@@ -9,7 +7,7 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.cinzaFundo,
   },
   mapContainer: {
-    height: height * 0.45, 
+    height: "45%",
     width: "100%",
   },
   map: {
@@ -20,7 +18,7 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.branco,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    marginTop: -30, 
+    marginTop: -30,
     padding: 25,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
@@ -125,5 +123,5 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  }
+  },
 });

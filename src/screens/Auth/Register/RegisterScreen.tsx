@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./RegisterScreen.styles";
@@ -21,7 +22,7 @@ import { registerSchema, RegisterFormData } from "../../../validations/schemas";
 
 const RegisterScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
-
+  const insets = useSafeAreaInsets();
   const {
     control,
     handleSubmit,
@@ -86,7 +87,9 @@ const RegisterScreen = () => {
         barStyle="light-content"
       />
 
-      <View style={styles.header}>
+      <View
+        style={[styles.header, { paddingTop: Math.max(insets.top + 20, 50) }]}
+      >
         <MaterialCommunityIcons
           name="account-plus-outline"
           size={50}
@@ -99,8 +102,12 @@ const RegisterScreen = () => {
       </View>
 
       <ScrollView
-        style={styles.formContainer}
+        contentContainerStyle={[
+          styles.formContainer,
+          { paddingBottom: Math.max(insets.bottom + 20, 40) },
+        ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
           <View style={styles.toggleContainer}>

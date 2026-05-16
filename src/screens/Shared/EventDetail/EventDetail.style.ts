@@ -1,7 +1,5 @@
-import { StyleSheet, Dimensions } from "react-native";
+import { StyleSheet } from "react-native";
 import { COLORS } from "../../../styles/colors";
-
-const { width } = Dimensions.get("window");
 
 export const styles = StyleSheet.create({
   container: {
@@ -9,18 +7,17 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.cinzaFundo,
   },
   banner: {
-    width: width,
-    height: 250, 
-    resizeMode: 'cover',
+    width: "100%",
+    height: 250,
+    resizeMode: "cover",
   },
   contentCard: {
     backgroundColor: COLORS.branco,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    marginTop: -30, 
+    marginTop: -30,
     padding: 25,
-    paddingBottom: 40, 
-    minHeight: '100%',
+    minHeight: "100%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
@@ -32,18 +29,18 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.textoPrincipal,
     marginBottom: 25,
-    textAlign: "center", 
+    textAlign: "center",
   },
   infoRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: 15,
-    backgroundColor: '#F9F9F9', 
+    backgroundColor: "#F9F9F9",
     padding: 12,
     borderRadius: 10,
   },
   infoIconContainer: {
-    backgroundColor: 'rgba(169, 0, 0, 0.1)', 
+    backgroundColor: "rgba(169, 0, 0, 0.1)",
     padding: 8,
     borderRadius: 8,
     marginRight: 15,
@@ -58,7 +55,7 @@ export const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 12,
     color: COLORS.textoSecundario,
-    textTransform: 'uppercase', 
+    textTransform: "uppercase",
     marginBottom: 2,
     fontWeight: "600",
   },
@@ -69,7 +66,7 @@ export const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 30,
-    gap: 15, 
+    gap: 15,
   },
   actionButton: {
     backgroundColor: COLORS.vermelhoPrincipal,
@@ -77,7 +74,7 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 16,
-    borderRadius: 12, 
+    borderRadius: 12,
     shadowColor: COLORS.vermelhoPrincipal,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -94,7 +91,7 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.branco,
     borderWidth: 1.5,
     borderColor: COLORS.vermelhoPrincipal,
-    elevation: 0, 
+    elevation: 0,
     shadowOpacity: 0,
   },
   secondaryButtonText: {

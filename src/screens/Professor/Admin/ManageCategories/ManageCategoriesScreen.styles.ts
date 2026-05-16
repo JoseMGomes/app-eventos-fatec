@@ -10,7 +10,8 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20, 
+    paddingBottom: 15,
     backgroundColor: COLORS.branco,
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
@@ -35,7 +36,6 @@ export const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 20,
-    paddingBottom: 40,
   },
   categoryCard: {
     backgroundColor: COLORS.branco,
@@ -87,6 +87,7 @@ export const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: COLORS.branco,
     width: "100%",
+    maxHeight: "90%", 
     borderRadius: 16,
     padding: 20,
     shadowColor: "#000",

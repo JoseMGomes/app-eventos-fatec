@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./ProfileScreen.styles";
@@ -41,6 +42,8 @@ const MenuItem = ({
 
 const ProfileScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
+  const insets = useSafeAreaInsets();
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -96,8 +99,15 @@ const ProfileScreen = () => {
         translucent
       />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom + 20, 40),
+        }}
+      >
+        <View
+          style={[styles.header, { paddingTop: Math.max(insets.top + 20, 50) }]}
+        >
           <View style={styles.avatarContainer}>
             <MaterialCommunityIcons
               name="account-tie"
@@ -141,6 +151,7 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
       <CustomAlert
         visible={alertVisible}
         title={alertConfig.title}

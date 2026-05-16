@@ -1,7 +1,5 @@
-import { StyleSheet, Dimensions } from "react-native";
+import { StyleSheet } from "react-native";
 import { COLORS } from "../../../styles/colors";
-
-const { width } = Dimensions.get("window");
 
 export const styles = StyleSheet.create({
   container: {
@@ -9,7 +7,7 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.cinzaFundo,
   },
   banner: {
-    width: width,
+    width: "100%",
     height: 250,
     resizeMode: "cover",
   },
@@ -19,7 +17,6 @@ export const styles = StyleSheet.create({
     borderTopRightRadius: 30,
     marginTop: -30,
     padding: 25,
-    paddingBottom: 40,
     minHeight: "100%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },

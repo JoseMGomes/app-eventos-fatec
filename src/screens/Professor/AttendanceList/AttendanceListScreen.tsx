@@ -6,9 +6,12 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  KeyboardAvoidingView, 
+  Platform, 
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; 
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AttendanceListScreen.styles";
 import { participantService } from "../../../services/participantService";
@@ -17,7 +20,9 @@ import CustomAlert from "../../../components/CustomAlert";
 const AttendanceListScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets(); 
   const { eventId } = (route.params as { eventId?: number | string }) || {};
+
   const [pesquisa, setPesquisa] = useState("");
   const [alunos, setAlunos] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -170,8 +175,13 @@ const AttendanceListScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <View
+        style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}
+      >
         <Text style={styles.title}>Lista de Presença</Text>
         <View style={styles.progressSection}>
           <View style={styles.statsContainer}>
@@ -233,8 +243,12 @@ const AttendanceListScreen = () => {
           data={alunosFiltrados}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={[
+            styles.listContainer,
+            { paddingBottom: Math.max(insets.bottom + 20, 40) },
+          ]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled" 
           ListEmptyComponent={
             <Text
               style={{
@@ -263,7 +277,7 @@ const AttendanceListScreen = () => {
           }
         }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

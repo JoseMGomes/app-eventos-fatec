@@ -1,4 +1,4 @@
-import { StyleSheet, Platform } from "react-native";
+import { StyleSheet } from "react-native";
 import { COLORS } from "../../../styles/colors";
 
 export const styles = StyleSheet.create({
@@ -9,7 +9,6 @@ export const styles = StyleSheet.create({
   header: {
     backgroundColor: COLORS.branco,
     alignItems: "center",
-    paddingTop: Platform.OS === 'ios' ? 60 : 50,
     paddingBottom: 30,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
@@ -23,7 +22,7 @@ export const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: 'rgba(169, 0, 0, 0.1)',
+    backgroundColor: "rgba(169, 0, 0, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 15,
@@ -40,7 +39,6 @@ export const styles = StyleSheet.create({
   },
   menuContainer: {
     padding: 20,
-    paddingBottom: 100, 
   },
   sectionTitle: {
     fontSize: 14,
@@ -78,12 +76,12 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: '#FFF0F0',
+    backgroundColor: "#FFF0F0",
     padding: 16,
     borderRadius: 16,
     marginTop: 20,
     borderWidth: 1,
-    borderColor: '#FFD6D6',
+    borderColor: "#FFD6D6",
   },
   logoutText: {
     color: COLORS.vermelhoPrincipal,

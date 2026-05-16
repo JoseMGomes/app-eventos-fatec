@@ -8,14 +8,13 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
   },
   inputGroup: {
     marginBottom: 20,
   },
   label: {
     fontSize: 16,
-    color: COLORS.vermelhoPrincipal, 
+    color: COLORS.vermelhoPrincipal,
     marginBottom: 8,
   },
   input: {
@@ -35,7 +34,7 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 10,
     marginBottom: 30,
-    overflow: "hidden", 
+    overflow: "hidden",
   },
   imageUploadMain: {
     padding: 30,
@@ -63,7 +62,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#FCE8E8", 
+    backgroundColor: "#FCE8E8",
     paddingHorizontal: 20,
     paddingVertical: 12,
   },

@@ -8,7 +8,6 @@ export const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.vermelhoPrincipal,
-    paddingTop: 60,
     paddingBottom: 25,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
@@ -34,7 +33,6 @@ export const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 100, 
   },
   eventCard: {
     backgroundColor: COLORS.branco,
@@ -83,20 +81,5 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textoSecundario,
     marginLeft: 6,
-  },
-  enrollButton: {
-    backgroundColor: COLORS.vermelhoPrincipal,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginTop: 15,
-  },
-  enrollButtonText: {
-    color: COLORS.branco,
-    fontWeight: "bold",
-    fontSize: 14,
-    marginLeft: 8,
   },
 });

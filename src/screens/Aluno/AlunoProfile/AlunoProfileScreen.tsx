@@ -10,10 +10,13 @@ import {
   FlatList,
   ActivityIndicator,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoProfileScreen.styles";
 import { AppNavigationProp } from "../../../navigation/types";
@@ -22,8 +25,10 @@ import CustomAlert from "../../../components/CustomAlert";
 
 const LISTA_SEMESTRES = ["1º", "2º", "3º", "4º", "5º", "6º", "Especial"];
 
-const ProfileScreen = () => {
+const AlunoProfileScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
+  const insets = useSafeAreaInsets();
+
   const [nome, setNome] = useState("");
   const [ra, setRa] = useState("");
   const [email, setEmail] = useState("");
@@ -262,7 +267,10 @@ const ProfileScreen = () => {
         backgroundColor="transparent"
         barStyle="light-content"
       />
-      <View style={styles.header}>
+
+      <View
+        style={[styles.header, { paddingTop: Math.max(insets.top + 20, 50) }]}
+      >
         <Text style={styles.headerTitle}>Meu Perfil</Text>
         <View style={styles.progressContainer}>
           <View style={styles.progressTextRow}>
@@ -290,95 +298,70 @@ const ProfileScreen = () => {
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.formContainer}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Text style={styles.sectionTitle}>Dados Pessoais & Acadêmicos</Text>
+        <ScrollView
+          contentContainerStyle={[
+            styles.formContainer,
+            { paddingBottom: Math.max(insets.bottom + 60, 80) },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.sectionTitle}>Dados Pessoais & Acadêmicos</Text>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Nome Completo</Text>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="account-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <TextInput
-              style={styles.input}
-              value={nome}
-              placeholderTextColor="#999"
-              onChangeText={setNome}
-              placeholder="Seu nome"
-            />
-          </View>
-        </View>
-
-        {tipo !== "VISITANTE" && (
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>RA (Registro do Aluno)</Text>
+            <Text style={styles.label}>Nome Completo</Text>
             <View style={styles.inputContainer}>
               <MaterialCommunityIcons
-                name="card-account-details-outline"
+                name="account-outline"
                 size={20}
                 color={COLORS.textoSecundario}
                 style={styles.icon}
               />
               <TextInput
                 style={styles.input}
-                value={ra}
-                onChangeText={setRa}
+                value={nome}
                 placeholderTextColor="#999"
-                placeholder="Seu RA"
-                keyboardType="number-pad"
+                onChangeText={setNome}
+                placeholder="Seu nome"
               />
             </View>
           </View>
-        )}
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>
-            {tipo === "VISITANTE" ? "Empresa/Instituição" : "Curso"}
-          </Text>
-          <TouchableOpacity
-            style={styles.inputContainer}
-            onPress={() => setModalCursoVisible(true)}
-          >
-            <MaterialCommunityIcons
-              name="school-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <Text
-              style={[
-                styles.input,
-                {
-                  color: curso ? COLORS.textoPrincipal : "#999",
-                  paddingTop: 12,
-                },
-              ]}
-            >
-              {curso || "Selecione..."}
-            </Text>
-            <MaterialCommunityIcons
-              name="chevron-down"
-              size={20}
-              color={COLORS.textoSecundario}
-            />
-          </TouchableOpacity>
-        </View>
+          {tipo !== "VISITANTE" && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>RA (Registro do Aluno)</Text>
+              <View style={styles.inputContainer}>
+                <MaterialCommunityIcons
+                  name="card-account-details-outline"
+                  size={20}
+                  color={COLORS.textoSecundario}
+                  style={styles.icon}
+                />
+                <TextInput
+                  style={styles.input}
+                  value={ra}
+                  onChangeText={setRa}
+                  placeholderTextColor="#999"
+                  placeholder="Seu RA"
+                  keyboardType="number-pad"
+                />
+              </View>
+            </View>
+          )}
 
-        {tipo !== "VISITANTE" && (
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Semestre</Text>
+            <Text style={styles.label}>
+              {tipo === "VISITANTE" ? "Empresa/Instituição" : "Curso"}
+            </Text>
             <TouchableOpacity
               style={styles.inputContainer}
-              onPress={() => setModalSemestreVisible(true)}
+              onPress={() => setModalCursoVisible(true)}
             >
               <MaterialCommunityIcons
-                name="calendar-clock-outline"
+                name="school-outline"
                 size={20}
                 color={COLORS.textoSecundario}
                 style={styles.icon}
@@ -387,12 +370,12 @@ const ProfileScreen = () => {
                 style={[
                   styles.input,
                   {
-                    color: semestre ? COLORS.textoPrincipal : "#999",
+                    color: curso ? COLORS.textoPrincipal : "#999",
                     paddingTop: 12,
                   },
                 ]}
               >
-                {semestre || "Selecione..."}
+                {curso || "Selecione..."}
               </Text>
               <MaterialCommunityIcons
                 name="chevron-down"
@@ -401,65 +384,98 @@ const ProfileScreen = () => {
               />
             </TouchableOpacity>
           </View>
-        )}
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Telefone</Text>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="phone-outline"
-              size={20}
-              color={COLORS.textoSecundario}
-              style={styles.icon}
-            />
-            <TextInput
-              style={styles.input}
-              value={telefone}
-              onChangeText={setTelefone}
-              placeholderTextColor="#999"
-              placeholder="(11) 99999-9999"
-              keyboardType="phone-pad"
-            />
+          {tipo !== "VISITANTE" && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Semestre</Text>
+              <TouchableOpacity
+                style={styles.inputContainer}
+                onPress={() => setModalSemestreVisible(true)}
+              >
+                <MaterialCommunityIcons
+                  name="calendar-clock-outline"
+                  size={20}
+                  color={COLORS.textoSecundario}
+                  style={styles.icon}
+                />
+                <Text
+                  style={[
+                    styles.input,
+                    {
+                      color: semestre ? COLORS.textoPrincipal : "#999",
+                      paddingTop: 12,
+                    },
+                  ]}
+                >
+                  {semestre || "Selecione..."}
+                </Text>
+                <MaterialCommunityIcons
+                  name="chevron-down"
+                  size={20}
+                  color={COLORS.textoSecundario}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Telefone</Text>
+            <View style={styles.inputContainer}>
+              <MaterialCommunityIcons
+                name="phone-outline"
+                size={20}
+                color={COLORS.textoSecundario}
+                style={styles.icon}
+              />
+              <TextInput
+                style={styles.input}
+                value={telefone}
+                onChangeText={setTelefone}
+                placeholderTextColor="#999"
+                placeholder="(11) 99999-9999"
+                keyboardType="phone-pad"
+              />
+            </View>
           </View>
-        </View>
 
-        <TouchableOpacity
-          style={styles.saveButton}
-          activeOpacity={0.8}
-          onPress={handleSalvarPerfil}
-        >
-          <MaterialCommunityIcons
-            name="content-save-outline"
-            size={20}
-            color={COLORS.branco}
-          />
-          <Text style={styles.saveButtonText}>Salvar Dados</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={{
-            marginTop: 40,
-            flexDirection: "row",
-            justifyContent: "center",
-          }}
-          onPress={handleLogout}
-        >
-          <MaterialCommunityIcons
-            name="logout"
-            size={20}
-            color={COLORS.vermelhoPrincipal}
-          />
-          <Text
-            style={{
-              color: COLORS.vermelhoPrincipal,
-              fontWeight: "bold",
-              marginLeft: 8,
-            }}
+          <TouchableOpacity
+            style={styles.saveButton}
+            activeOpacity={0.8}
+            onPress={handleSalvarPerfil}
           >
-            Sair da Conta
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+            <MaterialCommunityIcons
+              name="content-save-outline"
+              size={20}
+              color={COLORS.branco}
+            />
+            <Text style={styles.saveButtonText}>Salvar Dados</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              marginTop: 40,
+              flexDirection: "row",
+              justifyContent: "center",
+            }}
+            onPress={handleLogout}
+          >
+            <MaterialCommunityIcons
+              name="logout"
+              size={20}
+              color={COLORS.vermelhoPrincipal}
+            />
+            <Text
+              style={{
+                color: COLORS.vermelhoPrincipal,
+                fontWeight: "bold",
+                marginLeft: 8,
+              }}
+            >
+              Sair da Conta
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <SelecaoModal
         visible={modalCursoVisible}
@@ -469,7 +485,6 @@ const ProfileScreen = () => {
         onSelect={setCurso}
         onClose={() => setModalCursoVisible(false)}
       />
-
       <SelecaoModal
         visible={modalSemestreVisible}
         title="Em qual Semestre?"
@@ -492,4 +507,4 @@ const ProfileScreen = () => {
   );
 };
 
-export default ProfileScreen;
+export default AlunoProfileScreen;

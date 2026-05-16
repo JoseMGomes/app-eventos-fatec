@@ -35,7 +35,6 @@ export const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 20,
-    paddingBottom: 40,
   },
   courseCard: {
     backgroundColor: COLORS.branco,
@@ -87,6 +86,7 @@ export const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: COLORS.branco,
     width: "100%",
+    maxHeight: "90%", 
     borderRadius: 16,
     padding: 20,
     shadowColor: "#000",

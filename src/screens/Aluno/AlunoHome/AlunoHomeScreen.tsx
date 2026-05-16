@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoHomeScreen.styles";
 import { eventService } from "../../../services/eventService";
@@ -18,6 +19,8 @@ import CustomAlert from "../../../components/CustomAlert";
 
 const AlunoHomeScreen = () => {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
+
   const [userName, setUserName] = useState("Aluno");
   const [eventos, setEventos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -154,7 +157,9 @@ const AlunoHomeScreen = () => {
         barStyle="light-content"
       />
 
-      <View style={styles.header}>
+      <View
+        style={[styles.header, { paddingTop: Math.max(insets.top + 20, 50) }]}
+      >
         <Text style={styles.greeting}>Olá, {userName}!</Text>
         <Text style={styles.subtitle}>Pronto para aprender coisas novas?</Text>
       </View>
@@ -175,7 +180,10 @@ const AlunoHomeScreen = () => {
           data={eventos}
           keyExtractor={(item) => item.id}
           renderItem={renderEvento}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={[
+            styles.listContainer,
+            { paddingBottom: Math.max(insets.bottom + 80, 100) },
+          ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <Text

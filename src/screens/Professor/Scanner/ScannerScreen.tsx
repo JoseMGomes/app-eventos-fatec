@@ -1,12 +1,15 @@
 import { useRoute } from "@react-navigation/native";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView, 
+  Platform, 
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; 
 import { styles } from "./Scanner.style";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../styles/colors";
@@ -14,11 +17,12 @@ import CustomAlert from "../../../components/CustomAlert";
 
 const ScannerScreen = () => {
   const route = useRoute<any>();
+  const insets = useSafeAreaInsets(); 
   const eventName = route.params?.eventName || "Palestra de Tecnologia";
 
-  const [isCheckedActive, setIsCheckedActive] = React.useState(false);
-  const [secretWord, setSecretWord] = React.useState("");
-  const [timeLeft, setTimeLeft] = React.useState(900);
+  const [isCheckedActive, setIsCheckedActive] = useState(false);
+  const [secretWord, setSecretWord] = useState("");
+  const [timeLeft, setTimeLeft] = useState(900);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -96,10 +100,20 @@ const ScannerScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: Math.max(insets.top + 20, 40),
+            paddingBottom: Math.max(insets.bottom + 20, 40),
+          },
+        ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled" 
       >
         <View style={styles.header}>
           <Text style={styles.eventName}>{eventName}</Text>
@@ -191,7 +205,7 @@ const ScannerScreen = () => {
         tipo={alertConfig.tipo}
         onClose={() => setAlertVisible(false)}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

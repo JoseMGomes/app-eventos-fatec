@@ -10,9 +10,9 @@ import {
   StatusBar,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoEventDetail.styles";
-
 import CustomAlert from "../../../components/CustomAlert";
 
 const InfoRow = ({
@@ -37,6 +37,8 @@ const InfoRow = ({
 
 export default function AlunoEventoDetalhesScreen({ route, navigation }: any) {
   const { evento } = route.params || {};
+  const insets = useSafeAreaInsets();
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -97,20 +99,21 @@ export default function AlunoEventoDetalhesScreen({ route, navigation }: any) {
   };
 
   return (
-    <>
+    <View style={styles.container}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle="light-content"
       />
-      <ScrollView
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         <Image source={{ uri: evento?.imagemUrl }} style={styles.banner} />
 
-        <View style={styles.contentCard}>
+        <View
+          style={[
+            styles.contentCard,
+            { paddingBottom: Math.max(insets.bottom + 40, 40) },
+          ]}
+        >
           <Text style={styles.title}>{evento?.nome || "Nome do Evento"}</Text>
 
           <InfoRow
@@ -203,6 +206,6 @@ export default function AlunoEventoDetalhesScreen({ route, navigation }: any) {
           }
         }}
       />
-    </>
+    </View>
   );
 }

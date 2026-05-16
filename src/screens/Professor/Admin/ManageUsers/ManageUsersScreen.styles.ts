@@ -35,7 +35,6 @@ export const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 20,
-    paddingBottom: 40,
   },
   userCard: {
     backgroundColor: COLORS.branco,
@@ -85,7 +84,7 @@ export const styles = StyleSheet.create({
   },
   actionsRow: {
     flexDirection: "row",
-    gap: 15, 
+    gap: 15,
   },
   modalOverlay: {
     flex: 1,
@@ -97,6 +96,7 @@ export const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: COLORS.branco,
     width: "100%",
+    maxHeight: "90%", 
     borderRadius: 16,
     padding: 20,
     shadowColor: "#000",

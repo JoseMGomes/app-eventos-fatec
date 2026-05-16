@@ -12,6 +12,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Camera } from "expo-camera";
 import * as Notifications from "expo-notifications";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./SettingsScreen.styles";
 import * as FileSystem from "expo-file-system";
@@ -57,6 +58,8 @@ const SettingItem = ({
 );
 
 const SettingsScreen = () => {
+  const insets = useSafeAreaInsets();
+
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [cameraPermission, setCameraPermission] = useState(false);
   const [notificationsPermission, setNotificationsPermission] = useState(false);
@@ -259,7 +262,13 @@ const SettingsScreen = () => {
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: Math.max(insets.top, 20),
+            paddingBottom: Math.max(insets.bottom + 20, 40),
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.section}>
@@ -345,6 +354,7 @@ const SettingsScreen = () => {
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               padding: 25,
+              paddingBottom: Math.max(insets.bottom + 20, 25),
               maxHeight: "80%",
             }}
           >

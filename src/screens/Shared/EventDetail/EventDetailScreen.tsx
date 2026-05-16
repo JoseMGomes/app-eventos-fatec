@@ -8,6 +8,7 @@ import {
   StatusBar,
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   RootStackParamList,
   AppNavigationProp,
@@ -46,6 +47,8 @@ const InfoRow = ({
 const EventDetailScreen = ({ navigation }: Props) => {
   const route = useRoute<EventDetailRouteProp>();
   const { evento } = route.params;
+  const insets = useSafeAreaInsets();
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -92,20 +95,21 @@ const EventDetailScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <>
+    <View style={styles.container}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle="light-content"
       />
-      <ScrollView
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         <Image source={{ uri: evento.imagemUrl }} style={styles.banner} />
 
-        <View style={styles.contentCard}>
+        <View
+          style={[
+            styles.contentCard,
+            { paddingBottom: Math.max(insets.bottom + 40, 40) },
+          ]}
+        >
           <Text style={styles.title}>{evento.nome}</Text>
 
           <InfoRow
@@ -202,7 +206,7 @@ const EventDetailScreen = ({ navigation }: Props) => {
         textoConfirmar={alertConfig.textoConfirmar}
         textoCancelar={alertConfig.textoCancelar}
       />
-    </>
+    </View>
   );
 };
 

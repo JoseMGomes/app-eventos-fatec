@@ -10,9 +10,12 @@ import {
   ActivityIndicator,
   Modal,
   FlatList,
+  KeyboardAvoidingView, 
+  Platform, 
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; 
 import * as ImagePicker from "expo-image-picker";
 import { Calendar, LocaleConfig } from "react-native-calendars";
 import { COLORS } from "../../../styles/colors";
@@ -98,6 +101,8 @@ function formatTime(min: number): string {
 
 const CreateEventScreen = () => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets(); 
+
   const [isSaving, setIsSaving] = useState(false);
   const [cursos, setCursos] = useState<any[]>([]);
   const [categorias, setCategorias] = useState<any[]>([]);
@@ -411,10 +416,14 @@ const CreateEventScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 40) }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <TouchableOpacity
           style={styles.imageUploadArea}
@@ -864,6 +873,7 @@ const CreateEventScreen = () => {
             style={{
               backgroundColor: "#FFF",
               padding: 20,
+              paddingBottom: Math.max(insets.bottom + 20, 20),
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               maxHeight: "60%",
@@ -898,6 +908,7 @@ const CreateEventScreen = () => {
                   </Text>
                 </TouchableOpacity>
               )}
+              showsVerticalScrollIndicator={false}
               ListEmptyComponent={
                 <Text
                   style={{
@@ -906,7 +917,7 @@ const CreateEventScreen = () => {
                     textAlign: "center",
                   }}
                 >
-                  Nenhum horário disponível.
+                  Nenhum item disponível.
                 </Text>
               }
             />
@@ -942,7 +953,7 @@ const CreateEventScreen = () => {
           if (alertConfig.onCloseAcao) alertConfig.onCloseAcao();
         }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

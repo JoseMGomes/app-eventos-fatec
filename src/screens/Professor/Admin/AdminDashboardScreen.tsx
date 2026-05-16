@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; 
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AdminDashboardScreen.styles";
@@ -63,6 +64,8 @@ const StatCard = ({
 
 const AdminDashboardScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
+  const insets = useSafeAreaInsets(); 
+
   const [userName, setUserName] = useState("Carregando...");
   const [userRole, setUserRole] = useState<
     "ADMIN" | "COORDENADOR" | "AUXILIAR" | null
@@ -129,9 +132,19 @@ const AdminDashboardScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cinzaFundo} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: Math.max(insets.top + 20, 20),
+            paddingBottom: Math.max(insets.bottom + 20, 40),
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>

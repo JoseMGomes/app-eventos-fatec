@@ -18,10 +18,9 @@ export const styles = StyleSheet.create({
   },
   logoPlaceholder: {
     alignItems: "center",
-    marginTop: 20,
   },
   logoImage: {
-    width: 270, 
+    width: 270,
     height: 90,
     marginBottom: 10,
   },
@@ -32,7 +31,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   formContainer: {
-    flex: 1,
+    flexGrow: 1, 
     alignItems: "center",
     marginTop: -40,
     paddingHorizontal: 20,

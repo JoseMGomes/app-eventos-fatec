@@ -7,8 +7,13 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView, 
+  StatusBar, 
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageCoursesScreen.styles";
 import { courseService } from "../../../../services/courseService";
@@ -33,6 +38,8 @@ const formatarData = (dataIso: string) => {
 };
 
 const ManageCoursesScreen = () => {
+  const insets = useSafeAreaInsets();
+
   const [cursos, setCursos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -250,7 +257,15 @@ const ManageCoursesScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
+
+      <View
+        style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}
+      >
         <Text style={styles.title}>Cursos ({cursos.length})</Text>
         <TouchableOpacity style={styles.addButton} onPress={abrirModalCriacao}>
           <MaterialCommunityIcons name="plus" size={20} color={COLORS.branco} />
@@ -269,7 +284,10 @@ const ManageCoursesScreen = () => {
           data={cursos}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={[
+            styles.listContainer,
+            { paddingBottom: Math.max(insets.bottom + 20, 40) },
+          ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <Text
@@ -286,7 +304,10 @@ const ManageCoursesScreen = () => {
       )}
 
       <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleContainer}>
@@ -308,57 +329,66 @@ const ManageCoursesScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nome do Curso</Text>
-              <Controller
-                control={control}
-                name="name"
-                render={({ field: { onChange, value } }) => (
-                  <TextInput
-                    style={[
-                      styles.input,
-                      errors.name && {
-                        borderColor: COLORS.vermelhoPrincipal,
-                        borderWidth: 1,
-                      },
-                    ]}
-                    placeholder="Ex: Gestão Financeira"
-                    placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
-                    editable={!isSaving}
-                    autoFocus
-                  />
-                )}
-              />
-              {errors.name && (
-                <Text
-                  style={{
-                    color: COLORS.vermelhoPrincipal,
-                    fontSize: 12,
-                    marginTop: 4,
-                  }}
-                >
-                  {errors.name.message}
-                </Text>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
-              onPress={handleSubmit(onSalvarCurso)}
-              disabled={isSaving}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
             >
-              {isSaving ? (
-                <ActivityIndicator color={COLORS.branco} />
-              ) : (
-                <Text style={styles.submitButtonText}>
-                  {isEditando ? "Salvar Alterações" : "Criar"}
-                </Text>
-              )}
-            </TouchableOpacity>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Nome do Curso</Text>
+                <Controller
+                  control={control}
+                  name="name"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      style={[
+                        styles.input,
+                        errors.name && {
+                          borderColor: COLORS.vermelhoPrincipal,
+                          borderWidth: 1,
+                        },
+                      ]}
+                      placeholder="Ex: Gestão Financeira"
+                      placeholderTextColor="#999"
+                      value={value}
+                      onChangeText={onChange}
+                      editable={!isSaving}
+                      autoFocus
+                    />
+                  )}
+                />
+                {errors.name && (
+                  <Text
+                    style={{
+                      color: COLORS.vermelhoPrincipal,
+                      fontSize: 12,
+                      marginTop: 4,
+                    }}
+                  >
+                    {errors.name.message}
+                  </Text>
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  isSaving && { opacity: 0.7 },
+                  { marginBottom: 10 },
+                ]} 
+                onPress={handleSubmit(onSalvarCurso)}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator color={COLORS.branco} />
+                ) : (
+                  <Text style={styles.submitButtonText}>
+                    {isEditando ? "Salvar Alterações" : "Criar"}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <CustomAlert

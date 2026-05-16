@@ -9,10 +9,12 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  ScrollView, 
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; 
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./LoginScreen.styles";
@@ -36,6 +38,8 @@ type ViewState = "login" | "2fa" | "recovery" | "student" | "visitor";
 
 const LoginScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
+  const insets = useSafeAreaInsets(); 
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [viewState, setViewState] = useState<ViewState>("student");
@@ -870,7 +874,7 @@ const LoginScreen = () => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <View style={styles.topBackground}>
+      <View style={[styles.topBackground, { paddingTop: Math.max(insets.top + 10, 40) }]}>
         <View style={styles.logoPlaceholder}>
           <Image
             source={require("../../../assets/logoFatecBranco.png")}
@@ -880,7 +884,13 @@ const LoginScreen = () => {
           <Text style={styles.subtitle}>Seja muito bem-vindo.</Text>
         </View>
       </View>
-      <View style={styles.formContainer}>
+      
+      <ScrollView 
+        contentContainerStyle={[styles.formContainer, { paddingBottom: Math.max(insets.bottom + 20, 20) }]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <Animated.View
           style={[
             styles.card,
@@ -889,7 +899,8 @@ const LoginScreen = () => {
         >
           {renderFormContent()}
         </Animated.View>
-      </View>
+      </ScrollView>
+
       <CustomAlert
         visible={alertVisible}
         title={alertConfig.title}

@@ -7,8 +7,13 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView, 
+  StatusBar, 
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; 
 import { COLORS } from "../../../../styles/colors";
 import { styles } from "./ManageUsersScreen.styles";
 import { userService } from "../../../../services/userService";
@@ -40,6 +45,7 @@ const getRoleLabel = (role: string) => {
 };
 
 const ManageUsersScreen = () => {
+  const insets = useSafeAreaInsets();
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -77,8 +83,22 @@ const ManageUsersScreen = () => {
     textoCancelar?: string;
   }>({ title: "", message: "", tipo: "aviso" });
 
-  const mostrarAlerta = (title: string, message: string, tipo: "sucesso" | "erro" | "aviso", onConfirm?: () => void, textoConfirmar = "OK", textoCancelar = "Cancelar") => {
-    setAlertConfig({ title, message, tipo, onConfirm, textoConfirmar, textoCancelar });
+  const mostrarAlerta = (
+    title: string,
+    message: string,
+    tipo: "sucesso" | "erro" | "aviso",
+    onConfirm?: () => void,
+    textoConfirmar = "OK",
+    textoCancelar = "Cancelar",
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      tipo,
+      onConfirm,
+      textoConfirmar,
+      textoCancelar,
+    });
     setAlertVisible(true);
   };
 
@@ -93,10 +113,21 @@ const ManageUsersScreen = () => {
       setUsuarios(response.data);
     } catch (error: any) {
       console.warn("Erro ao carregar usuários:", error);
-      if (!error.response && (error.request || error.message === "Network Error")) {
-        mostrarAlerta("Sem Conexão", "Não foi possível carregar a lista de usuários. Verifique a rede.", "erro");
+      if (
+        !error.response &&
+        (error.request || error.message === "Network Error")
+      ) {
+        mostrarAlerta(
+          "Sem Conexão",
+          "Não foi possível carregar a lista de usuários. Verifique a rede.",
+          "erro",
+        );
       } else {
-        mostrarAlerta("Erro", "Ocorreu um problema ao buscar a lista de usuários.", "erro");
+        mostrarAlerta(
+          "Erro",
+          "Ocorreu um problema ao buscar a lista de usuários.",
+          "erro",
+        );
       }
     } finally {
       setIsLoading(false);
@@ -106,7 +137,7 @@ const ManageUsersScreen = () => {
   const abrirModalCriacao = () => {
     setUsuarioEmEdicao(null);
     setMostrarSenha(false);
-    reset({ nome: "", email: "", senha: "", role: "AUXILIAR" }); 
+    reset({ nome: "", email: "", senha: "", role: "AUXILIAR" });
     setModalVisible(true);
   };
 
@@ -115,7 +146,7 @@ const ManageUsersScreen = () => {
     reset({
       nome: user.name,
       email: user.email,
-      senha: "", 
+      senha: "",
       role: user.role,
     });
     setModalVisible(true);
@@ -129,7 +160,10 @@ const ManageUsersScreen = () => {
 
   const onSalvarUsuario = async (data: UserFormData) => {
     if (!usuarioEmEdicao && (!data.senha || data.senha.trim() === "")) {
-      setError("senha", { type: "manual", message: "A senha é obrigatória para criar um novo usuário." });
+      setError("senha", {
+        type: "manual",
+        message: "A senha é obrigatória para criar um novo usuário.",
+      });
       return;
     }
 
@@ -160,7 +194,9 @@ const ManageUsersScreen = () => {
       let msg = "Não foi possível salvar os dados do usuário.";
 
       if (error.response) {
-        msg = error.response.data?.message || "O servidor recusou o cadastro. Verifique se o e-mail já existe.";
+        msg =
+          error.response.data?.message ||
+          "O servidor recusou o cadastro. Verifique se o e-mail já existe.";
       } else if (error.request || error.message === "Network Error") {
         tituloErro = "Sem Conexão";
         msg = "Falha de conexão com a API. Tente novamente.";
@@ -189,7 +225,8 @@ const ManageUsersScreen = () => {
           let msg = "Não foi possível excluir o usuário no momento.";
 
           if (error.response) {
-            msg = error.response.data?.message || "O servidor recusou a exclusão.";
+            msg =
+              error.response.data?.message || "O servidor recusou a exclusão.";
           } else if (error.request || error.message === "Network Error") {
             tituloErro = "Sem Conexão";
             msg = "Falha de rede. Verifique sua internet.";
@@ -208,16 +245,29 @@ const ManageUsersScreen = () => {
       <Text style={styles.userEmail}>{item.email}</Text>
 
       <View style={styles.cardFooter}>
-        <View style={[styles.roleBadge, { backgroundColor: getRoleColor(item.role) }]}>
+        <View
+          style={[
+            styles.roleBadge,
+            { backgroundColor: getRoleColor(item.role) },
+          ]}
+        >
           <Text style={styles.roleText}>{getRoleLabel(item.role)}</Text>
         </View>
 
         <View style={styles.actionsRow}>
           <TouchableOpacity onPress={() => abrirModalEdicao(item)}>
-            <MaterialCommunityIcons name="pencil" size={22} color={COLORS.textoSecundario} />
+            <MaterialCommunityIcons
+              name="pencil"
+              size={22}
+              color={COLORS.textoSecundario}
+            />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleDelete(item)}>
-            <MaterialCommunityIcons name="trash-can" size={22} color={COLORS.vermelhoPrincipal} />
+            <MaterialCommunityIcons
+              name="trash-can"
+              size={22}
+              color={COLORS.vermelhoPrincipal}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -228,16 +278,30 @@ const ManageUsersScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
+
+      <View
+        style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}
+      >
         <Text style={styles.title}>Usuários ({usuarios.length})</Text>
         <TouchableOpacity style={styles.addButton} onPress={abrirModalCriacao}>
-          <MaterialCommunityIcons name="account-plus" size={20} color={COLORS.branco} />
+          <MaterialCommunityIcons
+            name="account-plus"
+            size={20}
+            color={COLORS.branco}
+          />
           <Text style={styles.addButtonText}>Criar novo</Text>
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
         </View>
       ) : (
@@ -245,10 +309,19 @@ const ManageUsersScreen = () => {
           data={usuarios}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={[
+            styles.listContainer,
+            { paddingBottom: Math.max(insets.bottom + 20, 40) },
+          ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Text style={{ textAlign: "center", color: COLORS.textoSecundario, marginTop: 20 }}>
+            <Text
+              style={{
+                textAlign: "center",
+                color: COLORS.textoSecundario,
+                marginTop: 20,
+              }}
+            >
               Nenhum usuário encontrado.
             </Text>
           }
@@ -256,7 +329,10 @@ const ManageUsersScreen = () => {
       )}
 
       <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleContainer}>
@@ -270,122 +346,198 @@ const ManageUsersScreen = () => {
                 </Text>
               </View>
               <TouchableOpacity onPress={fecharModal} disabled={isSaving}>
-                <MaterialCommunityIcons name="close-circle-outline" size={28} color={COLORS.vermelhoPrincipal} />
+                <MaterialCommunityIcons
+                  name="close-circle-outline"
+                  size={28}
+                  color={COLORS.vermelhoPrincipal}
+                />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nome</Text>
-              <View style={[styles.inputWrapper, errors.nome && { borderColor: COLORS.vermelhoPrincipal, borderWidth: 1 }]}>
-                <Controller
-                  control={control}
-                  name="nome"
-                  render={({ field: { onChange, value } }) => (
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Ex: João Silva"
-                      placeholderTextColor="#999"
-                      value={value}
-                      onChangeText={onChange}
-                      editable={!isSaving}
-                    />
-                  )}
-                />
-              </View>
-              {errors.nome && <Text style={{ color: COLORS.vermelhoPrincipal, fontSize: 12, marginTop: 4 }}>{errors.nome.message}</Text>}
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>E-mail</Text>
-              <View style={[styles.inputWrapper, errors.email && { borderColor: COLORS.vermelhoPrincipal, borderWidth: 1 }]}>
-                <Controller
-                  control={control}
-                  name="email"
-                  render={({ field: { onChange, value } }) => (
-                    <TextInput
-                      style={styles.input}
-                      placeholder="email@fatec.sp.gov.br"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      placeholderTextColor="#999"
-                      value={value}
-                      onChangeText={onChange}
-                      editable={!isSaving}
-                    />
-                  )}
-                />
-              </View>
-              {errors.email && <Text style={{ color: COLORS.vermelhoPrincipal, fontSize: 12, marginTop: 4 }}>{errors.email.message}</Text>}
-            </View>
-
-            {!isEditando && (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Senha</Text>
-                <View style={[styles.inputWrapper, errors.senha && { borderColor: COLORS.vermelhoPrincipal, borderWidth: 1 }]}>
+                <Text style={styles.label}>Nome</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    errors.nome && {
+                      borderColor: COLORS.vermelhoPrincipal,
+                      borderWidth: 1,
+                    },
+                  ]}
+                >
                   <Controller
                     control={control}
-                    name="senha"
+                    name="nome"
                     render={({ field: { onChange, value } }) => (
                       <TextInput
                         style={styles.input}
-                        placeholder="********"
+                        placeholder="Ex: João Silva"
                         placeholderTextColor="#999"
-                        secureTextEntry={!mostrarSenha}
                         value={value}
                         onChangeText={onChange}
                         editable={!isSaving}
                       />
                     )}
                   />
-                  <TouchableOpacity style={styles.eyeIcon} onPress={() => setMostrarSenha(!mostrarSenha)}>
-                    <MaterialCommunityIcons name={mostrarSenha ? "eye-off" : "eye"} size={22} color={COLORS.vermelhoPrincipal} />
-                  </TouchableOpacity>
                 </View>
-                {errors.senha && <Text style={{ color: COLORS.vermelhoPrincipal, fontSize: 12, marginTop: 4 }}>{errors.senha.message}</Text>}
-              </View>
-            )}
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nível de usuário</Text>
-              <View style={styles.rolesContainer}>
-                {OPCOES_NIVEL.map((opcao) => (
-                  <TouchableOpacity
-                    key={opcao.value}
-                    style={[
-                      styles.roleChip,
-                      nivelSelecionado === opcao.value && styles.roleChipActive,
-                    ]}
-                    onPress={() => setValue("role", opcao.value)}
-                    disabled={isSaving}
+                {errors.nome && (
+                  <Text
+                    style={{
+                      color: COLORS.vermelhoPrincipal,
+                      fontSize: 12,
+                      marginTop: 4,
+                    }}
                   >
-                    <Text
-                      style={[
-                        styles.roleChipText,
-                        nivelSelecionado === opcao.value && styles.roleChipTextActive,
-                      ]}
-                    >
-                      {opcao.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                    {errors.nome.message}
+                  </Text>
+                )}
               </View>
-            </View>
 
-            <TouchableOpacity
-              style={[styles.submitButton, isSaving && { opacity: 0.7 }]}
-              onPress={handleSubmit(onSalvarUsuario)}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator color={COLORS.branco} />
-              ) : (
-                <Text style={styles.submitButtonText}>
-                  {isEditando ? "Salvar Alterações" : "Criar Usuário"}
-                </Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>E-mail</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    errors.email && {
+                      borderColor: COLORS.vermelhoPrincipal,
+                      borderWidth: 1,
+                    },
+                  ]}
+                >
+                  <Controller
+                    control={control}
+                    name="email"
+                    render={({ field: { onChange, value } }) => (
+                      <TextInput
+                        style={styles.input}
+                        placeholder="email@fatec.sp.gov.br"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        placeholderTextColor="#999"
+                        value={value}
+                        onChangeText={onChange}
+                        editable={!isSaving}
+                      />
+                    )}
+                  />
+                </View>
+                {errors.email && (
+                  <Text
+                    style={{
+                      color: COLORS.vermelhoPrincipal,
+                      fontSize: 12,
+                      marginTop: 4,
+                    }}
+                  >
+                    {errors.email.message}
+                  </Text>
+                )}
+              </View>
+
+              {!isEditando && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Senha</Text>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      errors.senha && {
+                        borderColor: COLORS.vermelhoPrincipal,
+                        borderWidth: 1,
+                      },
+                    ]}
+                  >
+                    <Controller
+                      control={control}
+                      name="senha"
+                      render={({ field: { onChange, value } }) => (
+                        <TextInput
+                          style={styles.input}
+                          placeholder="********"
+                          placeholderTextColor="#999"
+                          secureTextEntry={!mostrarSenha}
+                          value={value}
+                          onChangeText={onChange}
+                          editable={!isSaving}
+                        />
+                      )}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeIcon}
+                      onPress={() => setMostrarSenha(!mostrarSenha)}
+                    >
+                      <MaterialCommunityIcons
+                        name={mostrarSenha ? "eye-off" : "eye"}
+                        size={22}
+                        color={COLORS.vermelhoPrincipal}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {errors.senha && (
+                    <Text
+                      style={{
+                        color: COLORS.vermelhoPrincipal,
+                        fontSize: 12,
+                        marginTop: 4,
+                      }}
+                    >
+                      {errors.senha.message}
+                    </Text>
+                  )}
+                </View>
               )}
-            </TouchableOpacity>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Nível de usuário</Text>
+                <View style={styles.rolesContainer}>
+                  {OPCOES_NIVEL.map((opcao) => (
+                    <TouchableOpacity
+                      key={opcao.value}
+                      style={[
+                        styles.roleChip,
+                        nivelSelecionado === opcao.value &&
+                          styles.roleChipActive,
+                      ]}
+                      onPress={() => setValue("role", opcao.value)}
+                      disabled={isSaving}
+                    >
+                      <Text
+                        style={[
+                          styles.roleChipText,
+                          nivelSelecionado === opcao.value &&
+                            styles.roleChipTextActive,
+                        ]}
+                      >
+                        {opcao.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  isSaving && { opacity: 0.7 },
+                  { marginBottom: 10 },
+                ]}
+                onPress={handleSubmit(onSalvarUsuario)}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator color={COLORS.branco} />
+                ) : (
+                  <Text style={styles.submitButtonText}>
+                    {isEditando ? "Salvar Alterações" : "Criar Usuário"}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <CustomAlert

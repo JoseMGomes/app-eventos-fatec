@@ -7,10 +7,13 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
+  KeyboardAvoidingView,
+  ScrollView,
 } from "react-native";
 import * as Location from "expo-location";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./CheckinAlunoScreen.styles";
 import MapView, { Marker, Circle, PROVIDER_GOOGLE } from "react-native-maps";
@@ -24,6 +27,8 @@ const RAIO_PERMITIDO_METROS = 50;
 
 const CheckinAlunoScreen = () => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+
   const [distancia, setDistancia] = useState<number | null>(null);
   const [palavraSecreta, setPalavraSecreta] = useState("");
   const [carregandoGPS, setCarregandoGPS] = useState(true);
@@ -186,7 +191,10 @@ const CheckinAlunoScreen = () => {
   const estaNoRaio = distancia !== null && distancia <= RAIO_PERMITIDO_METROS;
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
       <View style={styles.mapContainer}>
         <MapView
           style={styles.map}
@@ -213,7 +221,15 @@ const CheckinAlunoScreen = () => {
           />
         </MapView>
       </View>
-      <View style={styles.panel}>
+
+      <ScrollView
+        style={styles.panel}
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom + 20, 30),
+        }}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         <Text style={styles.title}>Validar Presença</Text>
         <Text style={styles.subtitle}>
           Confirme sua localização e digite o código do painel.
@@ -290,7 +306,7 @@ const CheckinAlunoScreen = () => {
           />
           <Text style={styles.confirmButtonText}>Confirmar Presença</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       <CustomAlert
         visible={alertVisible}
@@ -304,7 +320,7 @@ const CheckinAlunoScreen = () => {
           }
         }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

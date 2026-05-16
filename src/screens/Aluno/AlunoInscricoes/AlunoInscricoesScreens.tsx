@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoIncricoesScreens.styles";
@@ -34,6 +35,8 @@ const MINHAS_INSCRICOES_MOCK = [
 
 const AlunoInscricoesScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
+  const insets = useSafeAreaInsets(); 
+
   const [inscricoes, setInscricoes] = useState(MINHAS_INSCRICOES_MOCK);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
@@ -146,7 +149,9 @@ const AlunoInscricoesScreen = () => {
         barStyle="light-content"
       />
 
-      <View style={styles.header}>
+      <View
+        style={[styles.header, { paddingTop: Math.max(insets.top + 20, 50) }]}
+      >
         <Text style={styles.headerTitle}>Minhas Inscrições</Text>
         <Text style={styles.headerSubtitle}>
           Acompanhe seus eventos e valide sua presença
@@ -157,7 +162,10 @@ const AlunoInscricoesScreen = () => {
         data={inscricoes}
         keyExtractor={(item) => item.id}
         renderItem={renderInscricao}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[
+          styles.listContainer,
+          { paddingBottom: Math.max(insets.bottom + 80, 100) },
+        ]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>

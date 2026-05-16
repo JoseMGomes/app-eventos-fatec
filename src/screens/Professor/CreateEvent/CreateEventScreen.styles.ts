@@ -8,7 +8,6 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
   },
   imageUploadArea: {
     backgroundColor: COLORS.branco,
@@ -18,7 +17,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: "#E0E0E0",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -42,7 +41,7 @@ export const styles = StyleSheet.create({
     marginBottom: 20,
   },
   inputGroup: {
-    marginBottom: 20, 
+    marginBottom: 20,
   },
   label: {
     fontSize: 14,
@@ -52,11 +51,11 @@ export const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: COLORS.branco,
-    borderWidth: 1.5, 
+    borderWidth: 1.5,
     borderColor: COLORS.vermelhoPrincipal,
-    borderRadius: 10, 
+    borderRadius: 10,
     paddingHorizontal: 15,
-    paddingVertical: 14, 
+    paddingVertical: 14,
     fontSize: 16,
     color: COLORS.textoPrincipal,
   },

@@ -8,7 +8,6 @@ export const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.vermelhoPrincipal,
-    paddingTop: 60,
     paddingBottom: 30,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
@@ -55,7 +54,6 @@ export const styles = StyleSheet.create({
   },
   formContainer: {
     padding: 20,
-    paddingBottom: 150, 
   },
   sectionTitle: {
     fontSize: 18,

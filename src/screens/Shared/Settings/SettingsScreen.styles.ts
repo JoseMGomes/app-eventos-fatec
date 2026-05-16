@@ -8,7 +8,6 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
   },
   section: {
     marginBottom: 25,
@@ -24,7 +23,7 @@ export const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.branco,
     borderRadius: 16,
-    overflow: "hidden", 
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -69,5 +68,5 @@ export const styles = StyleSheet.create({
     color: COLORS.textoSecundario,
     fontSize: 14,
     marginTop: 20,
-  }
+  },
 });

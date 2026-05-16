@@ -8,7 +8,6 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
   },
   header: {
     marginBottom: 20,
