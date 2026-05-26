@@ -1,7 +1,7 @@
 import { StyleSheet, Dimensions } from "react-native";
 import { COLORS } from "../../../styles/colors";
 
-const { width } = Dimensions.get("window");
+const { height, width } = Dimensions.get("window");
 
 export const styles = StyleSheet.create({
   container: {
@@ -9,19 +9,18 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.cinzaFundo,
   },
   topBackground: {
-    height: "35%",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: width,
+    height: height * 0.38,
     backgroundColor: COLORS.vermelhoPrincipal,
-    justifyContent: "center",
-    alignItems: "center",
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
   },
-  logoPlaceholder: {
-    alignItems: "center",
-  },
   logoImage: {
-    width: 270,
-    height: 90,
+    width: 240,
+    height: 80,
     marginBottom: 10,
   },
   subtitle: {
@@ -31,9 +30,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   formContainer: {
-    flexGrow: 1, 
-    alignItems: "center",
-    marginTop: -40,
+    width: "100%",
     paddingHorizontal: 20,
   },
   card: {
@@ -146,4 +143,11 @@ export const styles = StyleSheet.create({
     height: "100%",
     opacity: 0,
   },
+  clearDataText: {
+    textAlign: "center",
+    color: COLORS.textoSecundario,
+    fontSize: 13,
+    marginTop: 15,
+    textDecorationLine: "underline",
+  }
 });

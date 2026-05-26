@@ -12,26 +12,30 @@ import {
 } from "react-native";
 import * as Location from "expo-location";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./CheckinAlunoScreen.styles";
 import MapView, { Marker, Circle, PROVIDER_GOOGLE } from "react-native-maps";
 import CustomAlert from "../../../components/CustomAlert";
+import { participantService } from "../../../services/participantService";
 
 const FATEC_COORDENADAS = {
-  latitude: -23.290387,
-  longitude: -47.296153,
+  latitude: -23.29034,
+  longitude: -47.29572,
 };
-const RAIO_PERMITIDO_METROS = 50;
+const RAIO_PERMITIDO_METROS = 150;
 
 const CheckinAlunoScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const insets = useSafeAreaInsets();
 
+  const { eventId, participantId } = (route.params as any) || {};
   const [distancia, setDistancia] = useState<number | null>(null);
   const [palavraSecreta, setPalavraSecreta] = useState("");
   const [carregandoGPS, setCarregandoGPS] = useState(true);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -76,7 +80,6 @@ const CheckinAlunoScreen = () => {
 
     const distanciaAngular =
       2 * Math.atan2(Math.sqrt(fatorCurvatura), Math.sqrt(1 - fatorCurvatura));
-
     return Math.round(raioDaTerraEmMetros * distanciaAngular);
   };
 
@@ -110,7 +113,7 @@ const CheckinAlunoScreen = () => {
         if (status !== "granted") {
           mostrarAlerta(
             "Permissão negada",
-            "Precisamos do seu GPS para validar a presença no evento.",
+            "Precisamos do seu GPS para validar a presença.",
             "erro",
           );
           setCarregandoGPS(false);
@@ -120,7 +123,7 @@ const CheckinAlunoScreen = () => {
         if (!providerStatus.locationServicesEnabled) {
           mostrarAlerta(
             "GPS Desativado",
-            "Por favor, ative o GPS do seu celular e tente novamente.",
+            "Por favor, ative o GPS e tente novamente.",
             "aviso",
           );
           setCarregandoGPS(false);
@@ -136,12 +139,11 @@ const CheckinAlunoScreen = () => {
           FATEC_COORDENADAS.latitude,
           FATEC_COORDENADAS.longitude,
         );
-
         setDistancia(dist);
       } catch (error) {
         mostrarAlerta(
           "Sinal Fraco",
-          "Não foi possível buscar sua localização atual. Verifique seu sinal de GPS e tente novamente.",
+          "Não foi possível buscar sua localização atual. Verifique seu sinal.",
           "erro",
         );
       } finally {
@@ -150,7 +152,16 @@ const CheckinAlunoScreen = () => {
     })();
   }, []);
 
-  const handleValidarPresenca = () => {
+  const handleValidarPresenca = async () => {
+    if (!eventId || !participantId) {
+      mostrarAlerta(
+        "Erro de Rota",
+        "Informações da inscrição perdidas. Volte e tente novamente.",
+        "erro",
+      );
+      return;
+    }
+
     if (!palavraSecreta.trim()) {
       mostrarAlerta(
         "Atenção",
@@ -163,18 +174,37 @@ const CheckinAlunoScreen = () => {
     if (distancia !== null && distancia > RAIO_PERMITIDO_METROS) {
       mostrarAlerta(
         "Fora do Local",
-        `Você está a ${formatarDistancia(distancia)} do evento. É necessário estar a no máximo ${RAIO_PERMITIDO_METROS}m para validar a presença.`,
+        `Você está a ${formatarDistancia(distancia)} do evento. É necessário estar a no máximo ${RAIO_PERMITIDO_METROS}m.`,
         "erro",
       );
       return;
     }
 
-    mostrarAlerta(
-      "Sucesso!",
-      "Sua presença foi validada com sucesso via GPS e Palavra Secreta.",
-      "sucesso",
-      () => navigation.goBack(),
-    );
+    setIsConfirming(true);
+    try {
+      await participantService.confirmPresenceWithSecret(
+        eventId,
+        participantId,
+        palavraSecreta.trim(),
+      );
+
+      mostrarAlerta(
+        "Sucesso!",
+        "Sua presença foi validada com sucesso via GPS e Palavra Secreta.",
+        "sucesso",
+        () => navigation.goBack(),
+      );
+    } catch (error: any) {
+      let msgErro = "Palavra secreta inválida ou erro no servidor.";
+      if (error.response?.data?.message) {
+        msgErro = Array.isArray(error.response.data.message)
+          ? error.response.data.message[0]
+          : String(error.response.data.message).split(",")[0];
+      }
+      mostrarAlerta("Falha na Validação", msgErro, "erro");
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   if (carregandoGPS) {
@@ -286,25 +316,32 @@ const CheckinAlunoScreen = () => {
           onChangeText={setPalavraSecreta}
           placeholder="EX: REACT2026"
           placeholderTextColor="#CCC"
-          autoCapitalize="characters"
-          maxLength={10}
+          autoCapitalize="none"
+          editable={!isConfirming}
         />
 
         <TouchableOpacity
           style={[
             styles.confirmButton,
-            (!estaNoRaio || palavraSecreta.length < 3) &&
+            (!estaNoRaio || palavraSecreta.length < 3 || isConfirming) &&
               styles.confirmButtonDisabled,
           ]}
           activeOpacity={0.8}
           onPress={handleValidarPresenca}
+          disabled={!estaNoRaio || palavraSecreta.length < 3 || isConfirming}
         >
-          <MaterialCommunityIcons
-            name="check-decagram"
-            size={20}
-            color={COLORS.branco}
-          />
-          <Text style={styles.confirmButtonText}>Confirmar Presença</Text>
+          {isConfirming ? (
+            <ActivityIndicator color={COLORS.branco} />
+          ) : (
+            <>
+              <MaterialCommunityIcons
+                name="check-decagram"
+                size={20}
+                color={COLORS.branco}
+              />
+              <Text style={styles.confirmButtonText}>Confirmar Presença</Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
 
@@ -315,9 +352,7 @@ const CheckinAlunoScreen = () => {
         tipo={alertConfig.tipo}
         onClose={() => {
           setAlertVisible(false);
-          if (alertConfig.onCloseAcao) {
-            alertConfig.onCloseAcao();
-          }
+          if (alertConfig.onCloseAcao) alertConfig.onCloseAcao();
         }}
       />
     </KeyboardAvoidingView>

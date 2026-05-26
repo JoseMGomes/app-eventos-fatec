@@ -1,43 +1,30 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as SecureStore from "expo-secure-store";
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoIncricoesScreens.styles";
 import CustomAlert from "../../../components/CustomAlert";
-
-const MINHAS_INSCRICOES_MOCK = [
-  {
-    id: "101",
-    nome: "Palestra: O Futuro da IA",
-    data: "2026-04-20T20:00:00Z",
-    local: "Auditório 2",
-    checkinLiberado: true,
-    presencaConfirmada: false,
-  },
-  {
-    id: "102",
-    nome: "Semana da Tecnologia 2026",
-    data: "2026-04-25T19:00:00Z",
-    local: "Auditório Principal",
-    checkinLiberado: false,
-    presencaConfirmada: false,
-  },
-];
+import { participantService } from "../../../services/participantService";
+import { eventService } from "../../../services/eventService";
 
 const AlunoInscricoesScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
 
-  const [inscricoes, setInscricoes] = useState(MINHAS_INSCRICOES_MOCK);
+  const [inscricoes, setInscricoes] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -57,7 +44,75 @@ const AlunoInscricoesScreen = () => {
     setAlertConfig({ title, message, tipo });
     setAlertVisible(true);
   };
+
+  useEffect(() => {
+    if (isFocused) {
+      buscarInscricoes();
+    }
+  }, [isFocused]);
+
+  const buscarInscricoes = async () => {
+    setIsLoading(true);
+    try {
+      const perfilStr = await SecureStore.getItemAsync("perfil_aluno");
+      if (!perfilStr) {
+        setIsLoading(false);
+        return;
+      }
+
+      const perfil = JSON.parse(perfilStr);
+      if (!perfil.email) {
+        setIsLoading(false);
+        return;
+      }
+
+      const eventosResponse = await eventService.getPublicEvents();
+      const todosEventos = eventosResponse.data || [];
+
+      let minhasInscricoesEncontradas: any[] = [];
+
+      await Promise.all(
+        todosEventos.map(async (evento: any) => {
+          try {
+            const participantesReq = await participantService.getByEventId(
+              evento.id,
+            );
+            const listaParticipantes = participantesReq.data || [];
+
+            const minhaInscricao = listaParticipantes.find(
+              (p: any) => p.email.toLowerCase() === perfil.email.toLowerCase(),
+            );
+
+            if (minhaInscricao) {
+              minhasInscricoesEncontradas.push({
+                id: minhaInscricao.id.toString(),
+                nome: evento.name || evento.nome,
+                data:
+                  evento.startDate || evento.data || minhaInscricao.createdAt,
+                local: evento.locationName || evento.local || "A definir",
+                checkinLiberado: true,
+                presencaConfirmada: minhaInscricao.isPresent,
+              });
+            }
+          } catch (err) {}
+        }),
+      );
+
+      setInscricoes(minhasInscricoesEncontradas);
+    } catch (error) {
+      console.warn("Erro ao buscar eventos e inscrições:", error);
+      mostrarAlerta(
+        "Ops!",
+        "Não foi possível carregar as inscrições. Tente puxar a tela para atualizar.",
+        "erro",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const formatarData = (dataISO: string) => {
+    if (!dataISO) return "--/--/----";
     const dataObj = new Date(dataISO);
     const dia = dataObj.toLocaleDateString("pt-BR", { timeZone: "UTC" });
     const hora = dataObj.toLocaleTimeString("pt-BR", {
@@ -158,29 +213,42 @@ const AlunoInscricoesScreen = () => {
         </Text>
       </View>
 
-      <FlatList
-        data={inscricoes}
-        keyExtractor={(item) => item.id}
-        renderItem={renderInscricao}
-        contentContainerStyle={[
-          styles.listContainer,
-          { paddingBottom: Math.max(insets.bottom + 80, 100) },
-        ]}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons
-              name="ticket-outline"
-              size={80}
-              color="#D1D1D1"
-            />
-            <Text style={styles.emptyText}>Nenhuma inscrição ativa</Text>
-            <Text style={styles.emptySubtext}>
-              Os eventos em que você se inscrever aparecerão aqui.
-            </Text>
-          </View>
-        }
-      />
+      {isLoading ? (
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
+          <Text style={{ marginTop: 10, color: COLORS.textoSecundario }}>
+            Procurando suas inscrições...
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={inscricoes}
+          keyExtractor={(item) => item.id}
+          renderItem={renderInscricao}
+          contentContainerStyle={[
+            styles.listContainer,
+            { paddingBottom: Math.max(insets.bottom + 80, 100) },
+          ]}
+          showsVerticalScrollIndicator={false}
+          refreshing={isLoading}
+          onRefresh={buscarInscricoes}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons
+                name="ticket-outline"
+                size={80}
+                color="#D1D1D1"
+              />
+              <Text style={styles.emptyText}>Nenhuma inscrição ativa</Text>
+              <Text style={styles.emptySubtext}>
+                Os eventos em que você se inscrever aparecerão aqui.
+              </Text>
+            </View>
+          }
+        />
+      )}
 
       <CustomAlert
         visible={alertVisible}

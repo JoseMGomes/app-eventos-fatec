@@ -8,17 +8,24 @@ export const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.vermelhoPrincipal,
-    paddingBottom: 30,
+    paddingBottom: 20, // Reduzido (era 30)
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15, // Reduzido (era 20)
   },
   headerTitle: {
     fontSize: 22,
     fontWeight: "bold",
     color: COLORS.branco,
-    textAlign: "center",
-    marginBottom: 20,
+  },
+  logoutIconArea: {
+    padding: 5,
   },
   progressContainer: {
     backgroundColor: "rgba(255, 255, 255, 0.15)",
@@ -59,10 +66,10 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: COLORS.textoPrincipal,
-    marginBottom: 15,
+    marginBottom: 10, // Reduzido (era 15)
   },
   inputGroup: {
-    marginBottom: 15,
+    marginBottom: 12, // Reduzido (era 15)
   },
   inputContainer: {
     flexDirection: "row",
@@ -79,7 +86,7 @@ export const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15, // Levemente menor para caber melhor
     color: COLORS.textoPrincipal,
   },
   saveButton: {
@@ -89,7 +96,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     height: 45,
     borderRadius: 12,
-    marginTop: 20,
+    marginTop: 15, // Reduzido (era 20)
     shadowColor: COLORS.vermelhoPrincipal,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -102,17 +109,10 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 8,
   },
-  helperText: {
-    textAlign: "center",
-    color: COLORS.textoSecundario,
-    fontSize: 13,
-    marginTop: 15,
-    paddingHorizontal: 20,
-  },
   label: {
-    fontSize: 14,
+    fontSize: 13, // Levemente menor
     color: COLORS.textoSecundario,
-    marginBottom: 6,
+    marginBottom: 4, // Reduzido
     fontWeight: "600",
   },
 });

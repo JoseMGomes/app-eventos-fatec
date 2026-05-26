@@ -76,10 +76,11 @@ const AlunoProfileScreen = () => {
   };
 
   useEffect(() => {
-    carregarDadosIniciais();
+    carregarPerfilLocal();
+    carregarCursosSilenciosamente();
   }, []);
 
-  const carregarDadosIniciais = async () => {
+  const carregarPerfilLocal = async () => {
     try {
       const perfilJson = await SecureStore.getItemAsync("perfil_aluno");
       if (perfilJson) {
@@ -92,24 +93,19 @@ const AlunoProfileScreen = () => {
         setTelefone(perfil.telefone || "");
         setTipo(perfil.tipo || "ALUNO");
       }
+    } catch (error) {
+      console.warn("Erro ao carregar perfil do SecureStore", error);
+    }
+  };
 
+  const carregarCursosSilenciosamente = async () => {
+    setLoadingCursos(true);
+    try {
       const response = await courseService.getAllPublic();
       const nomesDosCursos = response.data.map((c: any) => c.name);
       setListaCursos(nomesDosCursos);
     } catch (error: any) {
-      console.log("Erro ao carregar dados iniciais:", error);
-      if (
-        !error.response &&
-        (error.request || error.message === "Network Error")
-      ) {
-        mostrarAlerta(
-          "Sem Conexão",
-          "Não foi possível carregar a lista de cursos. Verifique sua internet.",
-          "erro",
-        );
-      } else {
-        mostrarAlerta("Ops!", "Falha ao carregar a lista de cursos.", "erro");
-      }
+      console.warn("Erro ao buscar cursos da API", error);
     } finally {
       setLoadingCursos(false);
     }
@@ -124,6 +120,7 @@ const AlunoProfileScreen = () => {
     const camposPreenchidos = camposObrigatorios.filter(
       (campo) => campo && String(campo).trim().length > 0,
     ).length;
+
     const calculo =
       camposObrigatorios.length > 0
         ? Math.round((camposPreenchidos / camposObrigatorios.length) * 100)
@@ -185,80 +182,18 @@ const AlunoProfileScreen = () => {
     );
   };
 
-  const SelecaoModal = ({
-    visible,
-    data,
-    onSelect,
-    onClose,
-    title,
-    loading,
-  }: any) => (
-    <Modal visible={visible} transparent animationType="fade">
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.6)",
-          justifyContent: "center",
-          padding: 20,
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: "#FFF",
-            borderRadius: 20,
-            padding: 20,
-            maxHeight: "70%",
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "bold",
-              marginBottom: 20,
-              color: COLORS.textoPrincipal,
-            }}
-          >
-            {title}
-          </Text>
-          {loading ? (
-            <ActivityIndicator size="large" color={COLORS.vermelhoPrincipal} />
-          ) : (
-            <FlatList
-              data={data}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={{
-                    paddingVertical: 15,
-                    borderBottomWidth: 1,
-                    borderBottomColor: "#EEE",
-                  }}
-                  onPress={() => {
-                    onSelect(item);
-                    onClose();
-                  }}
-                >
-                  <Text style={{ fontSize: 16, color: COLORS.textoPrincipal }}>
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          )}
-          <TouchableOpacity
-            onPress={onClose}
-            style={{ marginTop: 20, alignItems: "center" }}
-          >
-            <Text
-              style={{ color: COLORS.vermelhoPrincipal, fontWeight: "bold" }}
-            >
-              Cancelar
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
+  const handleTelefoneChange = (text: string) => {
+    let value = text.replace(/\D/g, "");
+    if (value.length > 11) value = value.substring(0, 11);
+    if (value.length > 2) {
+      value = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+    }
+    if (value.length > 9) {
+      value = `${value.substring(0, 10)}-${value.substring(10)}`;
+    }
+
+    setTelefone(value);
+  };
 
   return (
     <View style={styles.container}>
@@ -269,9 +204,22 @@ const AlunoProfileScreen = () => {
       />
 
       <View
-        style={[styles.header, { paddingTop: Math.max(insets.top + 20, 50) }]}
+        style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}
       >
-        <Text style={styles.headerTitle}>Meu Perfil</Text>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.headerTitle}>Meu Perfil</Text>
+          <TouchableOpacity
+            onPress={handleLogout}
+            style={styles.logoutIconArea}
+          >
+            <MaterialCommunityIcons
+              name="logout"
+              size={24}
+              color={COLORS.branco}
+            />
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.progressContainer}>
           <View style={styles.progressTextRow}>
             <Text style={styles.progressTitle}>
@@ -305,7 +253,7 @@ const AlunoProfileScreen = () => {
         <ScrollView
           contentContainerStyle={[
             styles.formContainer,
-            { paddingBottom: Math.max(insets.bottom + 60, 80) },
+            { paddingBottom: Math.max(insets.bottom + 120, 140) },
           ]}
           showsVerticalScrollIndicator={false}
         >
@@ -369,10 +317,7 @@ const AlunoProfileScreen = () => {
               <Text
                 style={[
                   styles.input,
-                  {
-                    color: curso ? COLORS.textoPrincipal : "#999",
-                    paddingTop: 12,
-                  },
+                  { color: curso ? COLORS.textoPrincipal : "#999" },
                 ]}
               >
                 {curso || "Selecione..."}
@@ -401,10 +346,7 @@ const AlunoProfileScreen = () => {
                 <Text
                   style={[
                     styles.input,
-                    {
-                      color: semestre ? COLORS.textoPrincipal : "#999",
-                      paddingTop: 12,
-                    },
+                    { color: semestre ? COLORS.textoPrincipal : "#999" },
                   ]}
                 >
                   {semestre || "Selecione..."}
@@ -430,10 +372,11 @@ const AlunoProfileScreen = () => {
               <TextInput
                 style={styles.input}
                 value={telefone}
-                onChangeText={setTelefone}
+                onChangeText={handleTelefoneChange}
                 placeholderTextColor="#999"
                 placeholder="(11) 99999-9999"
                 keyboardType="phone-pad"
+                maxLength={15}
               />
             </View>
           </View>
@@ -450,48 +393,171 @@ const AlunoProfileScreen = () => {
             />
             <Text style={styles.saveButtonText}>Salvar Dados</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              marginTop: 40,
-              flexDirection: "row",
-              justifyContent: "center",
-            }}
-            onPress={handleLogout}
-          >
-            <MaterialCommunityIcons
-              name="logout"
-              size={20}
-              color={COLORS.vermelhoPrincipal}
-            />
-            <Text
-              style={{
-                color: COLORS.vermelhoPrincipal,
-                fontWeight: "bold",
-                marginLeft: 8,
-              }}
-            >
-              Sair da Conta
-            </Text>
-          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <SelecaoModal
-        visible={modalCursoVisible}
-        title="Escolha seu Curso"
-        data={listaCursos}
-        loading={loadingCursos}
-        onSelect={setCurso}
-        onClose={() => setModalCursoVisible(false)}
-      />
-      <SelecaoModal
-        visible={modalSemestreVisible}
-        title="Em qual Semestre?"
-        data={LISTA_SEMESTRES}
-        onSelect={setSemestre}
-        onClose={() => setModalSemestreVisible(false)}
-      />
+      <Modal visible={modalCursoVisible} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFF",
+              borderRadius: 20,
+              padding: 20,
+              maxHeight: "70%",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "bold",
+                marginBottom: 20,
+                color: COLORS.textoPrincipal,
+              }}
+            >
+              Escolha seu Curso
+            </Text>
+
+            {loadingCursos ? (
+              <View style={{ padding: 30, alignItems: "center" }}>
+                <ActivityIndicator
+                  size="large"
+                  color={COLORS.vermelhoPrincipal}
+                />
+                <Text style={{ marginTop: 10, color: COLORS.textoSecundario }}>
+                  Carregando cursos...
+                </Text>
+              </View>
+            ) : listaCursos.length > 0 ? (
+              <FlatList
+                data={listaCursos}
+                keyExtractor={(item, index) => item + index}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={{
+                      paddingVertical: 15,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#EEE",
+                    }}
+                    onPress={() => {
+                      setCurso(item);
+                      setModalCursoVisible(false);
+                    }}
+                  >
+                    <Text
+                      style={{ fontSize: 16, color: COLORS.textoPrincipal }}
+                    >
+                      {item}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <View style={{ alignItems: "center", padding: 20 }}>
+                <Text
+                  style={{
+                    textAlign: "center",
+                    color: "#999",
+                    marginBottom: 15,
+                  }}
+                >
+                  Não foi possível carregar os cursos no momento.
+                </Text>
+                <TouchableOpacity onPress={carregarCursosSilenciosamente}>
+                  <Text
+                    style={{
+                      color: COLORS.vermelhoPrincipal,
+                      fontWeight: "bold",
+                      fontSize: 16,
+                    }}
+                  >
+                    Tentar Novamente
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <TouchableOpacity
+              onPress={() => setModalCursoVisible(false)}
+              style={{ marginTop: 20, alignItems: "center" }}
+            >
+              <Text
+                style={{ color: COLORS.vermelhoPrincipal, fontWeight: "bold" }}
+              >
+                Fechar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={modalSemestreVisible} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFF",
+              borderRadius: 20,
+              padding: 20,
+              maxHeight: "70%",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "bold",
+                marginBottom: 20,
+                color: COLORS.textoPrincipal,
+              }}
+            >
+              Em qual Semestre?
+            </Text>
+            <FlatList
+              data={LISTA_SEMESTRES}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={{
+                    paddingVertical: 15,
+                    borderBottomWidth: 1,
+                    borderBottomColor: "#EEE",
+                  }}
+                  onPress={() => {
+                    setSemestre(item);
+                    setModalSemestreVisible(false);
+                  }}
+                >
+                  <Text style={{ fontSize: 16, color: COLORS.textoPrincipal }}>
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity
+              onPress={() => setModalSemestreVisible(false)}
+              style={{ marginTop: 20, alignItems: "center" }}
+            >
+              <Text
+                style={{ color: COLORS.vermelhoPrincipal, fontWeight: "bold" }}
+              >
+                Cancelar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <CustomAlert
         visible={alertVisible}

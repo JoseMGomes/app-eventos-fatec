@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { COLORS } from "../styles/colors"; 
+import { COLORS } from "../styles/colors";
 
 interface CustomAlertProps {
   visible: boolean;
@@ -36,10 +36,13 @@ const CustomAlert = ({
       case "sucesso":
         return { name: "check-circle", color: "#27AE60" };
       case "erro":
-        return { name: "close-circle", color: COLORS.vermelhoPrincipal || "#B30000" };
+        return {
+          name: "close-circle",
+          color: COLORS.vermelhoPrincipal || "#B30000",
+        };
       case "aviso":
       default:
-        return { name: "alert-circle", color: "#F29C11" };
+        return { name: "alert-circle", color: "#B30000" };
     }
   };
 

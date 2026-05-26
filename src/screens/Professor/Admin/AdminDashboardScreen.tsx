@@ -39,29 +39,6 @@ const AdminOption = ({
   </TouchableOpacity>
 );
 
-const StatCard = ({
-  icon,
-  value,
-  label,
-  color,
-}: {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  value: string;
-  label: string;
-  color: string;
-}) => (
-  <View style={styles.statCard}>
-    <MaterialCommunityIcons
-      name={icon}
-      size={28}
-      color={color}
-      style={{ marginBottom: 5 }}
-    />
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
-
 const AdminDashboardScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const insets = useSafeAreaInsets(); 
@@ -160,27 +137,6 @@ const AdminDashboardScreen = () => {
             </Text>
           )}
           <Text style={styles.subtitleText}>Painel de Controle Fatec</Text>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <StatCard
-            icon="calendar-check"
-            value="3"
-            label="Eventos Hoje"
-            color={COLORS.vermelhoPrincipal}
-          />
-          <StatCard
-            icon="account-group"
-            value="142"
-            label="Alunos Ativos"
-            color="#2980B9"
-          />
-          <StatCard
-            icon="check-decagram"
-            value="89%"
-            label="Presença Média"
-            color="#27AE60"
-          />
         </View>
 
         <Text style={styles.sectionTitle}>Gestão do Sistema</Text>

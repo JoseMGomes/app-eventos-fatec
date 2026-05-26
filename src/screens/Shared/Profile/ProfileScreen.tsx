@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -13,6 +14,7 @@ import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./ProfileScreen.styles";
 import CustomAlert from "../../../components/CustomAlert";
+import { authService } from "../../../services/authService";
 
 const MenuItem = ({
   icon,
@@ -44,6 +46,10 @@ const ProfileScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const insets = useSafeAreaInsets();
 
+  const [userName, setUserName] = useState("Carregando...");
+  const [userEmail, setUserEmail] = useState("");
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -57,6 +63,30 @@ const ProfileScreen = () => {
     message: "",
     tipo: "aviso",
   });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setIsLoadingProfile(true);
+        const response = await authService.getMe();
+
+        if (response.data) {
+          const nomeCompleto = response.data.name || "Administrador";
+          const primeiroNome = nomeCompleto.split(" ")[0];
+          setUserName(primeiroNome);
+          setUserEmail(response.data.email || "");
+        }
+      } catch (error) {
+        console.warn("Erro ao buscar dados do usuário:", error);
+        setUserName("Administrador");
+        setUserEmail("Erro ao carregar e-mail");
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const mostrarAlerta = (
     title: string,
@@ -82,9 +112,15 @@ const ProfileScreen = () => {
       "Sair do Sistema",
       "Tem certeza que deseja encerrar sua sessão?",
       "aviso",
-      () => {
+      async () => {
         setAlertVisible(false);
-        navigation.reset({ index: 0, routes: [{ name: "Login" as any }] });
+        try {
+          await authService.logout();
+        } catch (error) {
+          console.warn("Erro ao fazer logout na API", error);
+        } finally {
+          navigation.reset({ index: 0, routes: [{ name: "Login" as any }] });
+        }
       },
       "Sim, Sair",
       "Cancelar",
@@ -115,8 +151,19 @@ const ProfileScreen = () => {
               color={COLORS.vermelhoPrincipal}
             />
           </View>
-          <Text style={styles.name}>Administrador</Text>
-          <Text style={styles.email}>admin@fatec.sp.gov.br</Text>
+
+          {isLoadingProfile ? (
+            <ActivityIndicator
+              size="small"
+              color={COLORS.vermelhoPrincipal}
+              style={{ marginTop: 10 }}
+            />
+          ) : (
+            <>
+              <Text style={styles.name}>{userName}</Text>
+              {userEmail ? <Text style={styles.email}>{userEmail}</Text> : null}
+            </>
+          )}
         </View>
 
         <View style={styles.menuContainer}>
@@ -125,11 +172,6 @@ const ProfileScreen = () => {
             icon="account-edit-outline"
             title="Editar Perfil"
             onPress={() => navigation.navigate("EditProfile" as any)}
-          />
-          <MenuItem
-            icon="shield-lock-outline"
-            title="Segurança e Senha"
-            onPress={() => console.log("Segurança")}
           />
           <MenuItem
             icon="cog-outline"

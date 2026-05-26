@@ -9,12 +9,13 @@ import {
   Platform,
   ActivityIndicator,
   Image,
-  ScrollView, 
+  ScrollView,
+  StatusBar,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
-import { useSafeAreaInsets } from "react-native-safe-area-context"; 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./LoginScreen.styles";
@@ -36,9 +37,19 @@ import {
 
 type ViewState = "login" | "2fa" | "recovery" | "student" | "visitor";
 
+interface AlertConfigState {
+  title: string;
+  message: string;
+  tipo: "sucesso" | "erro" | "aviso";
+  onConfirm?: () => void;
+  textoConfirmar?: string;
+  textoCancelar?: string;
+  onCloseAcao?: () => void;
+}
+
 const LoginScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
 
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -50,32 +61,47 @@ const LoginScreen = () => {
 
   const formAluno = useForm<AlunoAuthFormData>({
     resolver: zodResolver(alunoAuthSchema),
+    defaultValues: { nomeUsuario: "", raAluno: "", emailUsuario: "" },
   });
+
   const formVisitante = useForm<VisitanteAuthFormData>({
     resolver: zodResolver(visitanteAuthSchema),
+    defaultValues: { nomeUsuario: "", emailUsuario: "" },
   });
+
   const formLogin = useForm<LoginAdminFormData>({
     resolver: zodResolver(loginAdminSchema),
+    defaultValues: { email: "", password: "" },
   });
+
   const formRecovery = useForm<RecoveryFormData>({
     resolver: zodResolver(recoverySchema),
+    defaultValues: { email: "" },
   });
 
   const [alertVisible, setAlertVisible] = useState(false);
-  const [alertConfig, setAlertConfig] = useState<{
-    title: string;
-    message: string;
-    tipo: "sucesso" | "erro" | "aviso";
-    onCloseAcao?: () => void;
-  }>({ title: "", message: "", tipo: "aviso" });
+  const [alertConfig, setAlertConfig] = useState<AlertConfigState>({
+    title: "",
+    message: "",
+    tipo: "aviso",
+  });
 
   const mostrarAlerta = (
     title: string,
     message: string,
     tipo: "sucesso" | "erro" | "aviso",
-    onCloseAcao?: () => void,
+    onConfirm?: () => void,
+    textoConfirmar = "OK",
+    textoCancelar = "Cancelar",
   ) => {
-    setAlertConfig({ title, message, tipo, onCloseAcao });
+    setAlertConfig({
+      title,
+      message,
+      tipo,
+      onConfirm,
+      textoConfirmar,
+      textoCancelar,
+    });
     setAlertVisible(true);
   };
 
@@ -95,6 +121,8 @@ const LoginScreen = () => {
   }, []);
 
   const switchViewAnimada = (novaView: ViewState) => {
+    if (novaView === "login") setShowPassword(false);
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -124,6 +152,61 @@ const LoginScreen = () => {
     });
   };
 
+  const handleVerDadosSalvos = async () => {
+    try {
+      const perfilStr = await SecureStore.getItemAsync("perfil_aluno");
+      if (perfilStr) {
+        const perfil = JSON.parse(perfilStr);
+
+        let mensagem = "";
+        if (perfil.tipo === "ALUNO") {
+          mensagem = `O seu aparelho está vinculado ao Aluno:\n\nNome: ${perfil.nome}\nRA: ${perfil.ra}\nE-mail: ${perfil.email}`;
+        } else {
+          mensagem = `O seu aparelho está vinculado ao Visitante:\n\nNome: ${perfil.nome}\nE-mail: ${perfil.email}`;
+        }
+
+        mensagem +=
+          "\n\nDeseja limpar este vínculo para entrar com uma conta nova ou diferente?";
+
+        mostrarAlerta(
+          "Conta Vinculada",
+          mensagem,
+          "aviso",
+          async () => {
+            await SecureStore.deleteItemAsync("perfil_aluno");
+            setAlertVisible(false);
+            setTimeout(() => {
+              setAlertConfig({
+                title: "Feito!",
+                message:
+                  "Os dados foram apagados. Você já pode registrar uma nova conta.",
+                tipo: "sucesso",
+              });
+              setAlertVisible(true);
+            }, 400);
+          },
+          "Sim, Limpar Dados",
+          "Fechar",
+        );
+      } else {
+        setAlertConfig({
+          title: "Tudo limpo",
+          message:
+            "Não existe nenhuma conta vinculada a este aparelho no momento.",
+          tipo: "sucesso",
+        });
+        setAlertVisible(true);
+      }
+    } catch (error) {
+      setAlertConfig({
+        title: "Erro",
+        message: "Falha ao ler os dados salvos.",
+        tipo: "erro",
+      });
+      setAlertVisible(true);
+    }
+  };
+
   const onAcessoAluno = async (data: AlunoAuthFormData) => {
     setIsLoading(true);
     try {
@@ -144,11 +227,13 @@ const LoginScreen = () => {
           await SecureStore.setItemAsync("sessao_aluno_ativa", "true");
           navigation.replace("AlunoTabs" as any);
         } else {
-          mostrarAlerta(
-            "Credenciais Incorretas",
-            "O E-mail ou RA não correspondem à conta que está salva neste aparelho.",
-            "erro",
-          );
+          setAlertConfig({
+            title: "Credenciais Incorretas",
+            message:
+              "Os dados digitados não batem com a conta vinculada neste aparelho. Se esqueceu, clique em 'Ver dados vinculados' abaixo.",
+            tipo: "erro",
+          });
+          setAlertVisible(true);
         }
       } else {
         const novoPerfil = {
@@ -166,7 +251,12 @@ const LoginScreen = () => {
         navigation.replace("AlunoTabs" as any);
       }
     } catch (error) {
-      mostrarAlerta("Erro", "Falha ao processar os dados locais.", "erro");
+      setAlertConfig({
+        title: "Erro",
+        message: "Falha ao processar os dados locais.",
+        tipo: "erro",
+      });
+      setAlertVisible(true);
     } finally {
       setIsLoading(false);
     }
@@ -189,11 +279,13 @@ const LoginScreen = () => {
           await SecureStore.setItemAsync("sessao_aluno_ativa", "true");
           navigation.replace("AlunoTabs" as any);
         } else {
-          mostrarAlerta(
-            "Credenciais Incorretas",
-            "Este e-mail não corresponde à conta de visitante salva neste aparelho.",
-            "erro",
-          );
+          setAlertConfig({
+            title: "Credenciais Incorretas",
+            message:
+              "Este e-mail não corresponde à conta salva, ou o aparelho está vinculado a um Aluno. Clique em 'Ver dados vinculados' abaixo.",
+            tipo: "erro",
+          });
+          setAlertVisible(true);
         }
       } else {
         const novoPerfil = {
@@ -211,7 +303,12 @@ const LoginScreen = () => {
         navigation.replace("AlunoTabs" as any);
       }
     } catch (error) {
-      mostrarAlerta("Erro", "Falha ao processar os dados locais.", "erro");
+      setAlertConfig({
+        title: "Erro",
+        message: "Falha ao processar os dados locais.",
+        tipo: "erro",
+      });
+      setAlertVisible(true);
     } finally {
       setIsLoading(false);
     }
@@ -239,20 +336,30 @@ const LoginScreen = () => {
             "E-mail ou senha incorretos. Verifique suas credenciais e tente novamente.";
         } else {
           mensagemErro =
-            "O servidor encontrou um problema. Tente novamente mais tarde.";
+            "O servidor encontrou um problem. Tente novamente mais tarde.";
         }
       } else if (error.request || error.message === "Network Error") {
         tituloErro = "Sem Conexão";
         mensagemErro =
           "Não foi possível conectar ao servidor. Verifique sua internet.";
       }
-      mostrarAlerta(tituloErro, mensagemErro, "erro");
+      setAlertConfig({
+        title: tituloErro,
+        message: mensagemErro,
+        tipo: "erro",
+      });
+      setAlertVisible(true);
     }
   };
 
   const handleVerificarCodigo = async () => {
     if (code2FA.length < 6) {
-      mostrarAlerta("Atenção", "O código deve conter 6 dígitos.", "aviso");
+      setAlertConfig({
+        title: "Atenção",
+        message: "O código deve conter 6 dígitos.",
+        tipo: "aviso",
+      });
+      setAlertVisible(true);
       return;
     }
 
@@ -278,23 +385,29 @@ const LoginScreen = () => {
         mensagemErro =
           "Falha de conexão com o servidor. Tente novamente mais tarde.";
       }
-      mostrarAlerta(tituloErro, mensagemErro, "erro");
+      setAlertConfig({
+        title: tituloErro,
+        message: mensagemErro,
+        tipo: "erro",
+      });
+      setAlertVisible(true);
     }
   };
 
   const onRecuperarSenha = (data: RecoveryFormData) => {
-    mostrarAlerta(
-      "E-mail Enviado!",
-      `Enviamos as instruções para ${data.email}`,
-      "sucesso",
-      () => switchViewAnimada("login"),
-    );
+    setAlertConfig({
+      title: "E-mail Enviado!",
+      message: `Enviamos as instruções para ${data.email}`,
+      tipo: "sucesso",
+      onCloseAcao: () => switchViewAnimada("login"),
+    });
+    setAlertVisible(true);
   };
 
   const renderFormContent = () => {
     if (viewState === "student") {
       return (
-        <>
+        <View key="view_student" style={{ width: "100%" }}>
           <Text style={styles.cardTitle}>Acesso do Aluno</Text>
 
           <View style={{ marginBottom: 15 }}>
@@ -304,7 +417,6 @@ const LoginScreen = () => {
                 formAluno.formState.errors.nomeUsuario && {
                   borderColor: COLORS.vermelhoPrincipal,
                   borderWidth: 1,
-                  marginBottom: 0,
                 },
               ]}
             >
@@ -317,13 +429,13 @@ const LoginScreen = () => {
               <Controller
                 control={formAluno.control}
                 name="nomeUsuario"
-                render={({ field: { onChange, value } }) => (
+                render={({ field }) => (
                   <TextInput
                     style={styles.input}
                     placeholder="Nome Completo"
                     placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
+                    value={field.value || ""}
+                    onChangeText={field.onChange}
                   />
                 )}
               />
@@ -349,7 +461,6 @@ const LoginScreen = () => {
                 formAluno.formState.errors.raAluno && {
                   borderColor: COLORS.vermelhoPrincipal,
                   borderWidth: 1,
-                  marginBottom: 0,
                 },
               ]}
             >
@@ -362,13 +473,13 @@ const LoginScreen = () => {
               <Controller
                 control={formAluno.control}
                 name="raAluno"
-                render={({ field: { onChange, value } }) => (
+                render={({ field }) => (
                   <TextInput
                     style={styles.input}
                     placeholder="Seu RA"
                     placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
+                    value={field.value || ""}
+                    onChangeText={field.onChange}
                     keyboardType="number-pad"
                   />
                 )}
@@ -395,7 +506,6 @@ const LoginScreen = () => {
                 formAluno.formState.errors.emailUsuario && {
                   borderColor: COLORS.vermelhoPrincipal,
                   borderWidth: 1,
-                  marginBottom: 0,
                 },
               ]}
             >
@@ -408,13 +518,13 @@ const LoginScreen = () => {
               <Controller
                 control={formAluno.control}
                 name="emailUsuario"
-                render={({ field: { onChange, value } }) => (
+                render={({ field }) => (
                   <TextInput
                     style={styles.input}
                     placeholder="E-mail Institucional"
                     placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
+                    value={field.value || ""}
+                    onChangeText={field.onChange}
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
@@ -463,13 +573,21 @@ const LoginScreen = () => {
               Sou Professor / Coordenador
             </Text>
           </TouchableOpacity>
-        </>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleVerDadosSalvos}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Ver dados vinculados a este aparelho
+            </Text>
+          </TouchableOpacity>
+        </View>
       );
     }
 
     if (viewState === "visitor") {
       return (
-        <>
+        <View key="view_visitor" style={{ width: "100%" }}>
           <Text style={styles.cardTitle}>Acesso Visitante</Text>
           <Text style={styles.codeHelperText}>
             Para público externo e convidados.
@@ -482,7 +600,6 @@ const LoginScreen = () => {
                 formVisitante.formState.errors.nomeUsuario && {
                   borderColor: COLORS.vermelhoPrincipal,
                   borderWidth: 1,
-                  marginBottom: 0,
                 },
               ]}
             >
@@ -495,13 +612,13 @@ const LoginScreen = () => {
               <Controller
                 control={formVisitante.control}
                 name="nomeUsuario"
-                render={({ field: { onChange, value } }) => (
+                render={({ field }) => (
                   <TextInput
                     style={styles.input}
                     placeholder="Nome Completo"
                     placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
+                    value={field.value || ""}
+                    onChangeText={field.onChange}
                   />
                 )}
               />
@@ -527,7 +644,6 @@ const LoginScreen = () => {
                 formVisitante.formState.errors.emailUsuario && {
                   borderColor: COLORS.vermelhoPrincipal,
                   borderWidth: 1,
-                  marginBottom: 0,
                 },
               ]}
             >
@@ -540,13 +656,13 @@ const LoginScreen = () => {
               <Controller
                 control={formVisitante.control}
                 name="emailUsuario"
-                render={({ field: { onChange, value } }) => (
+                render={({ field }) => (
                   <TextInput
                     style={styles.input}
                     placeholder="E-mail para contato"
                     placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
+                    value={field.value || ""}
+                    onChangeText={field.onChange}
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
@@ -587,13 +703,22 @@ const LoginScreen = () => {
               Voltar para Acesso Aluno
             </Text>
           </TouchableOpacity>
-        </>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleVerDadosSalvos}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Ver dados vinculados a este aparelho
+            </Text>
+          </TouchableOpacity>
+        </View>
       );
     }
 
     if (viewState === "login") {
       return (
-        <>
+        <View key="view_login" style={{ width: "100%" }}>
           <Text style={styles.cardTitle}>Área do Colaborador</Text>
 
           <View style={{ marginBottom: 15 }}>
@@ -603,7 +728,6 @@ const LoginScreen = () => {
                 formLogin.formState.errors.email && {
                   borderColor: COLORS.vermelhoPrincipal,
                   borderWidth: 1,
-                  marginBottom: 0,
                 },
               ]}
             >
@@ -616,13 +740,13 @@ const LoginScreen = () => {
               <Controller
                 control={formLogin.control}
                 name="email"
-                render={({ field: { onChange, value } }) => (
+                render={({ field }) => (
                   <TextInput
                     style={styles.input}
                     placeholder="E-mail Institucional"
                     placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
+                    value={field.value || ""}
+                    onChangeText={field.onChange}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     editable={!isLoading}
@@ -651,7 +775,6 @@ const LoginScreen = () => {
                 formLogin.formState.errors.password && {
                   borderColor: COLORS.vermelhoPrincipal,
                   borderWidth: 1,
-                  marginBottom: 0,
                 },
               ]}
             >
@@ -664,13 +787,13 @@ const LoginScreen = () => {
               <Controller
                 control={formLogin.control}
                 name="password"
-                render={({ field: { onChange, value } }) => (
+                render={({ field }) => (
                   <TextInput
                     style={styles.input}
                     placeholder="Senha"
                     placeholderTextColor="#999"
-                    value={value}
-                    onChangeText={onChange}
+                    value={field.value || ""}
+                    onChangeText={field.onChange}
                     secureTextEntry={!showPassword}
                     editable={!isLoading}
                   />
@@ -732,13 +855,13 @@ const LoginScreen = () => {
               Voltar para Acesso de Aluno
             </Text>
           </TouchableOpacity>
-        </>
+        </View>
       );
     }
 
     if (viewState === "2fa") {
       return (
-        <>
+        <View key="view_2fa" style={{ width: "100%" }}>
           <Text style={styles.cardTitle}>Verificação de Segurança</Text>
           <Text style={styles.codeHelperText}>
             Enviamos um código de 6 dígitos para o e-mail:{"\n"}
@@ -791,13 +914,13 @@ const LoginScreen = () => {
           >
             <Text style={styles.secondaryButtonText}>Voltar</Text>
           </TouchableOpacity>
-        </>
+        </View>
       );
     }
 
     if (viewState === "recovery") {
       return (
-        <>
+        <View key="view_recovery" style={{ width: "100%" }}>
           <Text style={styles.cardTitle}>Recuperar Senha</Text>
           <Text style={styles.codeHelperText}>
             Digite o seu e-mail institucional. Enviaremos as instruções para
@@ -811,7 +934,6 @@ const LoginScreen = () => {
                 formRecovery.formState.errors.email && {
                   borderColor: COLORS.vermelhoPrincipal,
                   borderWidth: 1,
-                  marginBottom: 0,
                 },
               ]}
             >
@@ -824,14 +946,14 @@ const LoginScreen = () => {
               <Controller
                 control={formRecovery.control}
                 name="email"
-                render={({ field: { onChange, value } }) => (
+                render={({ field }) => (
                   <TextInput
                     style={styles.input}
                     placeholder="E-mail Institucional"
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    value={value}
-                    onChangeText={onChange}
+                    value={field.value || ""}
+                    onChangeText={field.onChange}
                   />
                 )}
               />
@@ -864,18 +986,41 @@ const LoginScreen = () => {
           >
             <Text style={styles.secondaryButtonText}>Voltar para o Login</Text>
           </TouchableOpacity>
-        </>
+        </View>
       );
     }
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={styles.container}
     >
-      <View style={[styles.topBackground, { paddingTop: Math.max(insets.top + 10, 40) }]}>
-        <View style={styles.logoPlaceholder}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
+
+      <View style={styles.topBackground} />
+
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: Math.max(insets.bottom + 20, 20),
+        }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+        style={{ width: "100%" }}
+      >
+        <View
+          style={{
+            alignItems: "center",
+            marginTop: Math.max(insets.top + 40, 60),
+            marginBottom: 40,
+          }}
+        >
           <Image
             source={require("../../../assets/logoFatecBranco.png")}
             style={styles.logoImage}
@@ -883,22 +1028,17 @@ const LoginScreen = () => {
           />
           <Text style={styles.subtitle}>Seja muito bem-vindo.</Text>
         </View>
-      </View>
-      
-      <ScrollView 
-        contentContainerStyle={[styles.formContainer, { paddingBottom: Math.max(insets.bottom + 20, 20) }]}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Animated.View
-          style={[
-            styles.card,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-          ]}
-        >
-          {renderFormContent()}
-        </Animated.View>
+
+        <View style={styles.formContainer}>
+          <Animated.View
+            style={[
+              styles.card,
+              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+            ]}
+          >
+            {renderFormContent()}
+          </Animated.View>
+        </View>
       </ScrollView>
 
       <CustomAlert
@@ -910,6 +1050,9 @@ const LoginScreen = () => {
           setAlertVisible(false);
           if (alertConfig.onCloseAcao) alertConfig.onCloseAcao();
         }}
+        onConfirm={alertConfig.onConfirm}
+        textoConfirmar={alertConfig.textoConfirmar}
+        textoCancelar={alertConfig.textoCancelar}
       />
     </KeyboardAvoidingView>
   );

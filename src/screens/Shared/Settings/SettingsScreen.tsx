@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   ScrollView,
-  Switch,
   TouchableOpacity,
   Linking,
-  AppState,
   Modal,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Camera } from "expo-camera";
-import * as Notifications from "expo-notifications";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./SettingsScreen.styles";
@@ -23,16 +19,13 @@ const SettingItem = ({
   iconBg,
   title,
   subtitle,
-  isSwitch,
-  switchValue,
-  onSwitchChange,
   onPress,
   hasBorder = true,
 }: any) => (
   <TouchableOpacity
     style={[styles.settingItem, hasBorder && styles.settingItemBorder]}
     onPress={onPress}
-    activeOpacity={isSwitch ? 1 : 0.7}
+    activeOpacity={0.7}
   >
     <View style={styles.settingLeft}>
       <View style={[styles.iconContainer, { backgroundColor: iconBg }]}>
@@ -44,25 +37,13 @@ const SettingItem = ({
       </View>
     </View>
 
-    {isSwitch ? (
-      <Switch
-        trackColor={{ false: "#E0E0E0", true: "rgba(169, 0, 0, 0.5)" }}
-        thumbColor={switchValue ? COLORS.vermelhoPrincipal : "#f4f3f4"}
-        onValueChange={onSwitchChange}
-        value={switchValue}
-      />
-    ) : (
-      <MaterialCommunityIcons name="chevron-right" size={24} color="#D1D1D1" />
-    )}
+    <MaterialCommunityIcons name="chevron-right" size={24} color="#D1D1D1" />
   </TouchableOpacity>
 );
 
 const SettingsScreen = () => {
   const insets = useSafeAreaInsets();
 
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [cameraPermission, setCameraPermission] = useState(false);
-  const [notificationsPermission, setNotificationsPermission] = useState(false);
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
     tipo: "sobre" | "politica";
@@ -105,113 +86,6 @@ const SettingsScreen = () => {
       onCloseAcao,
     });
     setAlertVisible(true);
-  };
-
-  const checkAllPermissions = async () => {
-    const cameraStatus = await Camera.getCameraPermissionsAsync();
-    setCameraPermission(cameraStatus.status === "granted");
-    const notifStatus = await Notifications.getPermissionsAsync();
-    setNotificationsPermission(notifStatus.status === "granted");
-  };
-
-  useEffect(() => {
-    checkAllPermissions();
-    const subscription = AppState.addEventListener("change", (nextAppState) => {
-      if (nextAppState === "active") {
-        checkAllPermissions();
-      }
-    });
-    return () => subscription.remove();
-  }, []);
-
-  const handleCameraToggle = async () => {
-    const { status, canAskAgain } = await Camera.getCameraPermissionsAsync();
-    if (status === "granted") {
-      mostrarAlerta(
-        "Permissão do Sistema",
-        "Por segurança, para revogar o acesso à câmera você precisa alterar nas configurações do aparelho.",
-        "aviso",
-        () => {
-          setAlertVisible(false);
-          Linking.openSettings();
-        },
-        "Abrir Configurações",
-      );
-    } else {
-      if (canAskAgain) {
-        const request = await Camera.requestCameraPermissionsAsync();
-        setCameraPermission(request.status === "granted");
-      } else {
-        mostrarAlerta(
-          "Câmera Bloqueada",
-          "O acesso à câmera foi negado permanentemente. Acesse as configurações do aparelho para liberar.",
-          "erro",
-          () => {
-            setAlertVisible(false);
-            Linking.openSettings();
-          },
-          "Abrir Configurações",
-        );
-      }
-    }
-  };
-
-  const handleNotificationsToggle = async () => {
-    const { status, canAskAgain } = await Notifications.getPermissionsAsync();
-    if (status === "granted") {
-      mostrarAlerta(
-        "Permissão do Sistema",
-        "Para parar de receber avisos, desative as notificações nas configurações do aparelho.",
-        "aviso",
-        () => {
-          setAlertVisible(false);
-          Linking.openSettings();
-        },
-        "Abrir Configurações",
-      );
-    } else {
-      if (canAskAgain) {
-        const { status: newStatus } =
-          await Notifications.requestPermissionsAsync();
-        setNotificationsPermission(newStatus === "granted");
-      } else {
-        mostrarAlerta(
-          "Notificações Bloqueadas",
-          "As notificações estão desativadas permanentemente. Acesse as configurações do aparelho para liberar os avisos.",
-          "erro",
-          () => {
-            setAlertVisible(false);
-            Linking.openSettings();
-          },
-          "Abrir Configurações",
-        );
-      }
-    }
-  };
-
-  const handleDarkModeToggle = (value: boolean) => {
-    mostrarAlerta(
-      "Alterar Tema",
-      value
-        ? "Deseja ativar o Modo Escuro?"
-        : "Deseja voltar para o Modo Claro?",
-      "aviso",
-      () => {
-        setAlertVisible(false);
-        setIsDarkMode(value);
-        if (value) {
-          setTimeout(() => {
-            mostrarAlerta(
-              "Em breve",
-              "O modo escuro está em desenvolvimento e será lançado na próxima versão.",
-              "aviso",
-            );
-            setIsDarkMode(false);
-          }, 600);
-        }
-      },
-      "Confirmar",
-    );
   };
 
   const handleClearCache = () => {
@@ -271,47 +145,6 @@ const SettingsScreen = () => {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Aparência</Text>
-          <View style={styles.card}>
-            <SettingItem
-              icon="moon-waning-crescent"
-              iconBg="#34495E"
-              title="Modo Escuro"
-              subtitle="Tema escuro para o aplicativo"
-              isSwitch
-              switchValue={isDarkMode}
-              onSwitchChange={handleDarkModeToggle}
-              hasBorder={false}
-            />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Permissões</Text>
-          <View style={styles.card}>
-            <SettingItem
-              icon="camera-outline"
-              iconBg="#27AE60"
-              title="Acesso à Câmera"
-              subtitle="Necessário para o Leitor QR"
-              isSwitch
-              switchValue={cameraPermission}
-              onSwitchChange={handleCameraToggle}
-            />
-            <SettingItem
-              icon="bell-outline"
-              iconBg="#F39C12"
-              title="Notificações"
-              subtitle="Avisos sobre novos eventos"
-              isSwitch
-              switchValue={notificationsPermission}
-              onSwitchChange={handleNotificationsToggle}
-              hasBorder={false}
-            />
-          </View>
-        </View>
-
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Sistema</Text>
           <View style={styles.card}>

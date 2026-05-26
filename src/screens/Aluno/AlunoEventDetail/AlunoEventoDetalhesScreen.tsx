@@ -8,12 +8,16 @@ import {
   Platform,
   Image,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as SecureStore from "expo-secure-store";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoEventDetail.styles";
 import CustomAlert from "../../../components/CustomAlert";
+import { participantService } from "../../../services/participantService";
+import { courseService } from "../../../services/courseService";
 
 const InfoRow = ({
   icon,
@@ -39,12 +43,14 @@ export default function AlunoEventoDetalhesScreen({ route, navigation }: any) {
   const { evento } = route.params || {};
   const insets = useSafeAreaInsets();
 
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
     message: string;
     tipo: "sucesso" | "erro" | "aviso";
     onCloseAcao?: () => void;
+    textoConfirmar?: string;
   }>({
     title: "",
     message: "",
@@ -56,34 +62,142 @@ export default function AlunoEventoDetalhesScreen({ route, navigation }: any) {
     message: string,
     tipo: "sucesso" | "erro" | "aviso",
     onCloseAcao?: () => void,
+    textoConfirmar = "OK",
   ) => {
-    setAlertConfig({ title, message, tipo, onCloseAcao });
+    setAlertConfig({ title, message, tipo, onCloseAcao, textoConfirmar });
     setAlertVisible(true);
   };
 
   const abrirComoChegar = () => {
-    const destino = evento?.local || "Fatec Itu - Dom Amaury Castanho";
+    const latLng = "-23.29034,-47.29572";
+    const label = evento?.local ? `Fatec Itu - ${evento.local}` : "Fatec Itu";
 
     const url = Platform.select({
-      ios: `maps:0,0?q=${destino}`,
-      android: `geo:0,0?q=${destino}`,
+      ios: `maps:0,0?q=${label}@${latLng}`,
+      android: `geo:0,0?q=${latLng}(${label})`,
     });
 
     if (url) {
       Linking.openURL(url).catch(() => {
         Linking.openURL(
-          `https://www.google.com/maps/search/?api=1&query=${destino}`,
+          `https://www.google.com/maps/search/?api=1&query=${latLng}`,
         );
       });
     }
   };
 
-  const fazerInscricao = () => {
-    mostrarAlerta(
-      "Oba!",
-      `Vamos preparar a sua inscrição para o evento:\n${evento?.nome || ""}`,
-      "sucesso",
-    );
+  const formatarSemestreParaBackend = (semestreStr: string) => {
+    if (!semestreStr) return null;
+    if (semestreStr === "Especial") return "ESPECIAL";
+    return `SEMESTER${semestreStr.replace("º", "")}`;
+  };
+
+  const buscarIdDoCurso = async (nomeDoCurso: string) => {
+    if (!nomeDoCurso) return undefined;
+    try {
+      const response = await courseService.getAllPublic();
+      const cursoEncontrado = response.data.find(
+        (c: any) => c.name === nomeDoCurso,
+      );
+      return cursoEncontrado ? Number(cursoEncontrado.id) : undefined;
+    } catch (e) {
+      return undefined;
+    }
+  };
+
+  const fazerInscricao = async () => {
+    setIsSubscribing(true);
+
+    try {
+      const perfilStr = await SecureStore.getItemAsync("perfil_aluno");
+
+      if (!perfilStr) {
+        mostrarAlerta(
+          "Perfil Incompleto",
+          "Você precisa preencher seu perfil antes de se inscrever.",
+          "aviso",
+          () => {
+            navigation.navigate("Profile");
+          },
+          "Ir para o Perfil",
+        );
+        setIsSubscribing(false);
+        return;
+      }
+
+      const perfil = JSON.parse(perfilStr);
+
+      const camposObrigatorios =
+        perfil.tipo === "VISITANTE"
+          ? [perfil.nome, perfil.email, perfil.telefone]
+          : [
+              perfil.nome,
+              perfil.ra,
+              perfil.curso,
+              perfil.semestre,
+              perfil.telefone,
+            ];
+
+      const camposPreenchidos = camposObrigatorios.filter(
+        (campo) => campo && String(campo).trim().length > 0,
+      ).length;
+
+      const porcentagem =
+        camposObrigatorios.length > 0
+          ? Math.round((camposPreenchidos / camposObrigatorios.length) * 100)
+          : 0;
+
+      if (porcentagem < 100) {
+        mostrarAlerta(
+          "Perfil Incompleto",
+          `Seu perfil está apenas ${porcentagem}% completo. Vá até a aba "Meu Perfil" e preencha todos os dados para liberar a inscrição.`,
+          "aviso",
+          () => navigation.navigate("Profile"),
+          "Completar Perfil",
+        );
+        setIsSubscribing(false);
+        return;
+      }
+
+      let courseIdBackend;
+      if (perfil.tipo === "ALUNO" && perfil.curso) {
+        courseIdBackend = await buscarIdDoCurso(perfil.curso);
+      }
+
+      const payload: any = {
+        eventId: evento.id,
+        name: perfil.nome,
+        email: perfil.email,
+        ra: perfil.tipo === "ALUNO" ? perfil.ra : null,
+        semester:
+          perfil.tipo === "ALUNO"
+            ? formatarSemestreParaBackend(perfil.semestre)
+            : null,
+      };
+
+      if (courseIdBackend) {
+        payload.courseId = courseIdBackend;
+      }
+
+      await participantService.createParticipant(payload);
+
+      mostrarAlerta(
+        "Inscrição Confirmada!",
+        `Você garantiu sua vaga no evento:\n${evento?.nome || ""}\n\nEnviamos um comprovante para o seu e-mail.`,
+        "sucesso",
+        () => navigation.goBack(),
+      );
+    } catch (error: any) {
+      let msgErro = "Não foi possível realizar sua inscrição. Tente novamente.";
+      if (error.response?.data?.message) {
+        msgErro = Array.isArray(error.response.data.message)
+          ? error.response.data.message[0]
+          : String(error.response.data.message).split(",")[0];
+      }
+      mostrarAlerta("Falha na Inscrição", msgErro, "erro");
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   const formatarData = (dataISO: string) => {
@@ -163,16 +277,23 @@ export default function AlunoEventoDetalhesScreen({ route, navigation }: any) {
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={styles.actionButton}
+              style={[styles.actionButton, isSubscribing && { opacity: 0.7 }]}
               activeOpacity={0.8}
               onPress={fazerInscricao}
+              disabled={isSubscribing}
             >
-              <MaterialCommunityIcons
-                name="ticket-confirmation-outline"
-                size={20}
-                color={COLORS.branco}
-              />
-              <Text style={styles.actionButtonText}>Garantir Vaga</Text>
+              {isSubscribing ? (
+                <ActivityIndicator color={COLORS.branco} size="small" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons
+                    name="ticket-confirmation-outline"
+                    size={20}
+                    color={COLORS.branco}
+                  />
+                  <Text style={styles.actionButtonText}>Garantir Vaga</Text>
+                </>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -205,6 +326,7 @@ export default function AlunoEventoDetalhesScreen({ route, navigation }: any) {
             alertConfig.onCloseAcao();
           }
         }}
+        textoConfirmar={alertConfig.textoConfirmar}
       />
     </View>
   );
