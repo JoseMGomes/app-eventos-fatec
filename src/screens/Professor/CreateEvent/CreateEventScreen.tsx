@@ -10,12 +10,12 @@ import {
   ActivityIndicator,
   Modal,
   FlatList,
-  KeyboardAvoidingView, 
-  Platform, 
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { useSafeAreaInsets } from "react-native-safe-area-context"; 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Calendar, LocaleConfig } from "react-native-calendars";
 import { COLORS } from "../../../styles/colors";
@@ -101,7 +101,7 @@ function formatTime(min: number): string {
 
 const CreateEventScreen = () => {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
 
   const [isSaving, setIsSaving] = useState(false);
   const [cursos, setCursos] = useState<any[]>([]);
@@ -125,7 +125,7 @@ const CreateEventScreen = () => {
     setValue,
     watch,
     formState: { errors },
-  } = useForm<CreateEventFormData>({
+  } = useForm<CreateEventFormData & { presenceSecret?: string }>({
     resolver: zodResolver(createEventSchema),
     defaultValues: {
       nome: "",
@@ -140,6 +140,7 @@ const CreateEventScreen = () => {
       palestrante: "",
       eventoRestrito: false,
       descricao: "",
+      presenceSecret: "",
     },
   });
 
@@ -298,7 +299,9 @@ const CreateEventScreen = () => {
     if (!result.canceled) setImagemUri(result.assets[0].uri);
   };
 
-  const onSubmitValido = async (formData: CreateEventFormData) => {
+  const onSubmitValido = async (
+    formData: CreateEventFormData & { presenceSecret?: string },
+  ) => {
     if (!imagemUri) {
       mostrarAlerta("Atenção", "Adicione a imagem de capa do evento.", "aviso");
       return;
@@ -331,6 +334,10 @@ const CreateEventScreen = () => {
       if (formData.semestre) dataPayload.append("semester", formData.semestre);
       if (formData.categoriaId && formData.categoriaId !== 0)
         dataPayload.append("categoryId", String(formData.categoriaId));
+
+      if (formData.presenceSecret && formData.presenceSecret.trim() !== "") {
+        dataPayload.append("presenceSecret", formData.presenceSecret.trim());
+      }
 
       const filename = imagemUri.split("/").pop();
       const match = /\.(\w+)$/.exec(filename || "");
@@ -416,12 +423,15 @@ const CreateEventScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 40) }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 20, 40) },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -781,6 +791,33 @@ const CreateEventScreen = () => {
                 />
               )}
             />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Palavra Secreta (Check-in)</Text>
+            <Controller
+              control={control}
+              name="presenceSecret"
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: FATEC123 (Opcional)"
+                  placeholderTextColor="#999"
+                  value={value}
+                  onChangeText={onChange}
+                  autoCapitalize="characters"
+                />
+              )}
+            />
+            <Text
+              style={{
+                color: COLORS.textoSecundario,
+                fontSize: 12,
+                marginTop: 4,
+              }}
+            >
+              Os alunos precisarão desta palavra para registrar presença.
+            </Text>
           </View>
         </View>
 

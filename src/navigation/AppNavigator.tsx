@@ -2,7 +2,6 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import LoginScreen from "../screens/Auth/Login/LoginScreen";
-import ScannerScreen from "../screens/Professor/Scanner/ScannerScreen";
 import EventDetailScreen from "../screens/Shared/EventDetail/EventDetailScreen";
 import AttendanceListScreen from "../screens/Professor/AttendanceList/AttendanceListScreen";
 import TabNavigator from "./TabNavigator";
@@ -37,11 +36,6 @@ const AppNavigator = () => {
           name="MainTabs"
           component={TabNavigator}
           options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Scanner"
-          component={ScannerScreen}
-          options={{ title: "Validar Presença" }}
         />
         <Stack.Screen
           name="EventDetail"

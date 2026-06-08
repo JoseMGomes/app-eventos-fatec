@@ -3,7 +3,13 @@ import { authService } from "./authService";
 
 export const eventService = {
   getPublicEvents: async () => {
-    return await api.get('/events/publicAllEvents');
+    return await api.get("/events/publicAllEvents");
+  },
+
+  getPublicEventsByParticipantEmail: async (email: string) => {
+    return await api.get(
+      `/events/public/by-participant-email?email=${encodeURIComponent(email)}`,
+    );
   },
 
   getAllAdminEvents: async () => {

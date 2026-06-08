@@ -11,14 +11,15 @@ export type Evento = {
   eventoRestrito: boolean;
   curso: string;
   semestre: string;
+  presenceSecret?: string;
 };
 
 export type RootStackParamList = {
   Login: undefined;
   MainTabs: undefined;
   EventDetail: { evento: Evento };
-  Scanner: { eventId: string; eventName: string };
-  AttendanceList: { eventId: string | number };
+  Scanner: { eventId: string; eventName: string }; 
+  AttendanceList: { eventId: string | number }; 
   CreateEvent: undefined;
   ManageUsers: undefined;
   ManageCategories: undefined;
@@ -26,7 +27,7 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Settings: undefined;
   Register: undefined;
-  CheckinAluno: undefined;
+  CheckinAluno: { eventId: string | number; participantId: string | number };
 };
 
 export type AppNavigationProp = StackNavigationProp<RootStackParamList>;

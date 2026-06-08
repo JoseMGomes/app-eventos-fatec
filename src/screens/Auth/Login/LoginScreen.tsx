@@ -993,7 +993,8 @@ const LoginScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       style={styles.container}
     >
       <StatusBar
@@ -1007,7 +1008,7 @@ const LoginScreen = () => {
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingBottom: Math.max(insets.bottom + 20, 20),
+          paddingBottom: Math.max(insets.bottom + 40, 120),
         }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

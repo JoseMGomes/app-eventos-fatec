@@ -43,7 +43,9 @@ export const participantService = {
   ) => {
     return await api.patch(
       `/events/${eventId}/participants/${participantId}/presence`,
-      { presenceSecret },
+      {
+        presenceSecret: presenceSecret,
+      },
     );
   },
 };

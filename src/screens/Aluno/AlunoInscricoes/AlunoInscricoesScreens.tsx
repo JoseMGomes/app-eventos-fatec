@@ -15,7 +15,6 @@ import { AppNavigationProp } from "../../../navigation/types";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoIncricoesScreens.styles";
 import CustomAlert from "../../../components/CustomAlert";
-import { participantService } from "../../../services/participantService";
 import { eventService } from "../../../services/eventService";
 
 const AlunoInscricoesScreen = () => {
@@ -66,41 +65,25 @@ const AlunoInscricoesScreen = () => {
         return;
       }
 
-      const eventosResponse = await eventService.getPublicEvents();
-      const todosEventos = eventosResponse.data || [];
-
-      let minhasInscricoesEncontradas: any[] = [];
-
-      await Promise.all(
-        todosEventos.map(async (evento: any) => {
-          try {
-            const participantesReq = await participantService.getByEventId(
-              evento.id,
-            );
-            const listaParticipantes = participantesReq.data || [];
-
-            const minhaInscricao = listaParticipantes.find(
-              (p: any) => p.email.toLowerCase() === perfil.email.toLowerCase(),
-            );
-
-            if (minhaInscricao) {
-              minhasInscricoesEncontradas.push({
-                id: minhaInscricao.id.toString(),
-                nome: evento.name || evento.nome,
-                data:
-                  evento.startDate || evento.data || minhaInscricao.createdAt,
-                local: evento.locationName || evento.local || "A definir",
-                checkinLiberado: true,
-                presencaConfirmada: minhaInscricao.isPresent,
-              });
-            }
-          } catch (err) {}
-        }),
+      const response = await eventService.getPublicEventsByParticipantEmail(
+        perfil.email,
       );
+      const eventosDoAluno = response.data || [];
+
+      const minhasInscricoesEncontradas = eventosDoAluno.map((evento: any) => ({
+        eventId: evento.id || evento.eventId,
+        participantId: evento.participantId || null,
+        nome: evento.name || evento.nome,
+        data: evento.startDate || evento.data,
+        local: evento.locationName || evento.local || "A definir",
+        checkinLiberado: true,
+        presencaConfirmada:
+          evento.isPresent || evento.presencaConfirmada || false,
+      }));
 
       setInscricoes(minhasInscricoesEncontradas);
     } catch (error) {
-      console.warn("Erro ao buscar eventos e inscrições:", error);
+      console.warn("Erro ao buscar inscrições do aluno:", error);
       mostrarAlerta(
         "Ops!",
         "Não foi possível carregar as inscrições. Tente puxar a tela para atualizar.",
@@ -171,7 +154,12 @@ const AlunoInscricoesScreen = () => {
               { backgroundColor: COLORS.vermelhoPrincipal },
             ]}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate("CheckinAluno")}
+            onPress={() =>
+              navigation.navigate("CheckinAluno", {
+                eventId: item.eventId,
+                participantId: item.participantId,
+              })
+            }
           >
             <MaterialCommunityIcons
               name="qrcode-scan"
@@ -225,7 +213,9 @@ const AlunoInscricoesScreen = () => {
       ) : (
         <FlatList
           data={inscricoes}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) =>
+            item.eventId ? item.eventId.toString() : index.toString()
+          }
           renderItem={renderInscricao}
           contentContainerStyle={[
             styles.listContainer,

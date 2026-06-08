@@ -69,7 +69,7 @@ const EventDetailScreen = ({ navigation }: Props) => {
     tipo: "sucesso" | "erro" | "aviso",
     onConfirm?: () => void,
     textoConfirmar = "OK",
-    textoCancelar = "Cancelar",
+    textoCancelar?: string,
   ) => {
     setAlertConfig({
       title,
@@ -92,6 +92,18 @@ const EventDetailScreen = ({ navigation }: Props) => {
       timeZone: "UTC",
     });
     return `${dia} às ${hora}`;
+  };
+
+  const handleExibirPalavraSecreta = () => {
+    const palavra = evento.presenceSecret || "NENHUMA PALAVRA DEFINIDA";
+
+    mostrarAlerta(
+      "Palavra Secreta do Evento",
+      `\nProjete ou informe esta palavra aos alunos para confirmação de presença:\n\n${palavra}`,
+      "sucesso", 
+      undefined,
+      "Fechar",
+    );
   };
 
   return (
@@ -158,20 +170,15 @@ const EventDetailScreen = ({ navigation }: Props) => {
             <TouchableOpacity
               style={styles.actionButton}
               activeOpacity={0.8}
-              onPress={() =>
-                navigation.navigate("Scanner", {
-                  eventId: evento.id,
-                  eventName: evento.nome,
-                })
-              }
+              onPress={handleExibirPalavraSecreta}
             >
               <MaterialCommunityIcons
-                name="qrcode-edit"
+                name="shield-key-outline"
                 size={20}
                 color={COLORS.branco}
               />
               <Text style={styles.actionButtonText}>
-                Painel de Check-in (Palavra/QR)
+                Exibir Palavra Secreta
               </Text>
             </TouchableOpacity>
 
@@ -179,7 +186,9 @@ const EventDetailScreen = ({ navigation }: Props) => {
               style={[styles.actionButton, styles.secondaryButton]}
               activeOpacity={0.8}
               onPress={() =>
-                navigation.navigate("AttendanceList", { eventId: evento.id })
+                navigation.navigate("AttendanceList" as any, {
+                  eventId: evento.id,
+                })
               }
             >
               <MaterialCommunityIcons

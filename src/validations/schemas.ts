@@ -193,5 +193,6 @@ export const createEventSchema = z.object({
   palestrante: z.string().optional(),
   eventoRestrito: z.boolean(),
   descricao: z.string().optional(),
+  presenceSecret: z.string().optional(),
 });
 export type CreateEventFormData = z.infer<typeof createEventSchema>;

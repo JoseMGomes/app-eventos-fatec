@@ -24,7 +24,7 @@ const FATEC_COORDENADAS = {
   latitude: -23.29034,
   longitude: -47.29572,
 };
-const RAIO_PERMITIDO_METROS = 150;
+const RAIO_PERMITIDO_METROS = 100;
 
 const CheckinAlunoScreen = () => {
   const navigation = useNavigation();

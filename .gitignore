@@ -30,12 +30,23 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
-
 # typescript
 *.tsbuildinfo
 
 # generated native folders
 /ios
 /android
+
+
+# Variáveis de Ambiente (Segurança máxima)
+.env
+.env.*
+!.env.example
+
+# Builds locais e artefatos do EAS (Para não subir arquivos pesados)
+*.apk
+*.aab
+eas-build-*.tar.gz
+
+# Logs de erro locais
+*.log
