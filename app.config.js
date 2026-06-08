@@ -12,6 +12,7 @@ export default {
       backgroundColor: "#B30000"
     },
     ios: {
+      jsEngine: "hermes",
       supportsTablet: true,
       infoPlist: {
         NSAppTransportSecurity: {
@@ -23,6 +24,7 @@ export default {
       }
     },
     android: {
+      jsEngine: "hermes",
       config: {
         googleMaps: {
           apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY

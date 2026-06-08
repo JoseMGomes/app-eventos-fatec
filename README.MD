@@ -1,6 +1,5 @@
 <h1 align="center">
   <br>
-  <!-- Substitua pelo logo do projeto se tiver -->
   📱 App Fatec Eventos
   <br>
 </h1>

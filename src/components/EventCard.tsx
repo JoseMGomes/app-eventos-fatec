@@ -1,5 +1,6 @@
-import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { memo } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image"; 
 import { Evento } from "../navigation/types";
 import { COLORS } from "../styles/colors";
 
@@ -38,6 +39,8 @@ const EventCard = ({ evento, onPress }: EventCardProps) => {
       <Image
         source={{ uri: evento.imagemUrl || "https://via.placeholder.com/300" }}
         style={styles.cardImage}
+        contentFit="cover" 
+        transition={300} 
       />
 
       {evento.eventoRestrito && (
@@ -67,6 +70,7 @@ const EventCard = ({ evento, onPress }: EventCardProps) => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   card: {
@@ -133,4 +137,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EventCard;
+export default memo(EventCard);

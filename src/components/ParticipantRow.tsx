@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { COLORS } from "../styles/colors";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -35,6 +35,7 @@ const ParticipantRow = ({ nome, curso, presente }: ParticipantRowProps) => {
   );
 };
 
+
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
@@ -67,4 +68,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ParticipantRow;
+export default memo(ParticipantRow);
