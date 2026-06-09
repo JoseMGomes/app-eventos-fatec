@@ -6,21 +6,22 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  KeyboardAvoidingView, 
-  Platform, 
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { useSafeAreaInsets } from "react-native-safe-area-context"; 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AttendanceListScreen.styles";
 import { participantService } from "../../../services/participantService";
 import CustomAlert from "../../../components/CustomAlert";
+import ParticipantRow from "../../../components/ParticipantRow";
 
 const AttendanceListScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
   const { eventId } = (route.params as { eventId?: number | string }) || {};
 
   const [pesquisa, setPesquisa] = useState("");
@@ -133,45 +134,16 @@ const AttendanceListScreen = () => {
       : 0;
 
   const renderItem = ({ item }: any) => (
-    <View style={styles.studentCard}>
-      <View
-        style={[
-          styles.avatarContainer,
-          { backgroundColor: item.isPresent ? "#E8F5E9" : "#F5F5F5" },
-        ]}
-      >
-        <MaterialCommunityIcons
-          name={item.isPresent ? "account-check" : "account"}
-          size={24}
-          color={item.isPresent ? "#27AE60" : COLORS.textoSecundario}
-        />
-      </View>
-
-      <View style={styles.studentInfo}>
-        <Text style={styles.studentName}>{item.name}</Text>
-        <Text style={styles.studentRa}>RA: {item.ra || "Não informado"}</Text>
-      </View>
-
-      <TouchableOpacity
-        style={{ alignItems: "center", padding: 5 }}
-        onPress={() => alternarPresenca(item)}
-        activeOpacity={0.7}
-      >
-        <MaterialCommunityIcons
-          name={item.isPresent ? "checkbox-marked" : "checkbox-blank-outline"}
-          size={32}
-          color={item.isPresent ? "#27AE60" : COLORS.textoSecundario}
-        />
-        <Text
-          style={[
-            styles.statusText,
-            { color: item.isPresent ? "#27AE60" : COLORS.textoSecundario },
-          ]}
-        >
-          {item.isPresent ? "PRESENTE" : "FALTOU"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity
+      onPress={() => alternarPresenca(item)}
+      activeOpacity={0.8}
+    >
+      <ParticipantRow
+        nome={item.name}
+        curso={`RA: ${item.ra || "Não informado"}`}
+        presente={item.isPresent}
+      />
+    </TouchableOpacity>
   );
 
   return (
@@ -248,7 +220,11 @@ const AttendanceListScreen = () => {
             { paddingBottom: Math.max(insets.bottom + 20, 40) },
           ]}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled" 
+          keyboardShouldPersistTaps="handled"
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={11}
+          removeClippedSubviews={true}
           ListEmptyComponent={
             <Text
               style={{

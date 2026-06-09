@@ -224,6 +224,10 @@ const AlunoInscricoesScreen = () => {
           showsVerticalScrollIndicator={false}
           refreshing={isLoading}
           onRefresh={buscarInscricoes}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={11}
+          removeClippedSubviews={true}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <MaterialCommunityIcons

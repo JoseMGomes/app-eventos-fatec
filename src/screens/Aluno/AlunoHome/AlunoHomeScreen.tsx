@@ -4,22 +4,23 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  Image,
   StatusBar,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../../styles/colors";
 import { styles } from "./AlunoHomeScreen.styles";
 import { eventService } from "../../../services/eventService";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 import CustomAlert from "../../../components/CustomAlert";
 
 const AlunoHomeScreen = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused(); 
 
   const [userName, setUserName] = useState("Aluno");
   const [eventos, setEventos] = useState<any[]>([]);
@@ -45,8 +46,10 @@ const AlunoHomeScreen = () => {
   };
 
   useEffect(() => {
-    carregarDados();
-  }, []);
+    if (isFocused) {
+      carregarDados();
+    }
+  }, [isFocused]);
 
   const carregarDados = async () => {
     try {
@@ -92,7 +95,11 @@ const AlunoHomeScreen = () => {
       if (error.response) {
         mensagemErro =
           "Tivemos um problema ao buscar os eventos. Tente atualizar a página.";
-      } else if (error.request || error.message === "Network Error") {
+      } else if (
+        error.request ||
+        error.message === "Network Error" ||
+        error.code === "ECONNABORTED"
+      ) {
         tituloErro = "Sem Conexão";
         mensagemErro = "Verifique sua internet ou tente novamente mais tarde.";
       }
@@ -123,7 +130,12 @@ const AlunoHomeScreen = () => {
         navigation.navigate("AlunoEventoDetalhes", { evento: item })
       }
     >
-      <Image source={{ uri: item.imagemUrl }} style={styles.eventImage} />
+      <Image
+        source={{ uri: item.imagemUrl }}
+        style={styles.eventImage}
+        contentFit="cover"
+        transition={200}
+      />
       <View style={styles.cardContent}>
         <View style={styles.tagContainer}>
           <Text style={styles.tagText}>{item.categoria}</Text>
@@ -166,7 +178,7 @@ const AlunoHomeScreen = () => {
 
       <Text style={styles.sectionTitle}>Próximos Eventos na Fatec</Text>
 
-      {isLoading ? (
+      {isLoading && eventos.length === 0 ? ( 
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
@@ -185,6 +197,12 @@ const AlunoHomeScreen = () => {
             { paddingBottom: Math.max(insets.bottom + 80, 100) },
           ]}
           showsVerticalScrollIndicator={false}
+          refreshing={isLoading}
+          onRefresh={carregarDados}
+          initialNumToRender={5} 
+          maxToRenderPerBatch={5}
+          windowSize={11}
+          removeClippedSubviews={true} 
           ListEmptyComponent={
             <Text
               style={{
