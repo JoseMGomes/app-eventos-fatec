@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Image,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,6 +18,7 @@ import { styles } from "./EventDetail.style";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../../styles/colors";
 import CustomAlert from "../../../components/CustomAlert";
+import { api } from "../../../factory/api";
 
 type EventDetailRouteProp = RouteProp<RootStackParamList, "EventDetail">;
 
@@ -48,6 +50,11 @@ const EventDetailScreen = ({ navigation }: Props) => {
   const route = useRoute<EventDetailRouteProp>();
   const { evento } = route.params;
   const insets = useSafeAreaInsets();
+
+  const [palavraSecreta, setPalavraSecreta] = useState<string | null>(
+    evento.presenceSecret || null,
+  );
+  const [buscandoPalavra, setBuscandoPalavra] = useState(false);
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
@@ -82,6 +89,27 @@ const EventDetailScreen = ({ navigation }: Props) => {
     setAlertVisible(true);
   };
 
+  useEffect(() => {
+    const buscarPalavraSecretaAtualizada = async () => {
+      if (!palavraSecreta && evento.id) {
+        try {
+          const resposta = await api.get("/events");
+          const eventoAtualizado = resposta.data.find(
+            (ev: any) => String(ev.id) === String(evento.id),
+          );
+
+          if (eventoAtualizado && eventoAtualizado.presenceSecret) {
+            setPalavraSecreta(eventoAtualizado.presenceSecret);
+          }
+        } catch (error) {
+          console.log("Erro ao buscar palavra secreta atualizada", error);
+        }
+      }
+    };
+
+    buscarPalavraSecretaAtualizada();
+  }, [evento.id]);
+
   const formatarData = (dataISO: string) => {
     if (!dataISO) return "Data não informada";
     const dataObj = new Date(dataISO);
@@ -94,16 +122,49 @@ const EventDetailScreen = ({ navigation }: Props) => {
     return `${dia} às ${hora}`;
   };
 
-  const handleExibirPalavraSecreta = () => {
-    const palavra = evento.presenceSecret || "NENHUMA PALAVRA DEFINIDA";
+  const handleExibirPalavraSecreta = async () => {
+    if (!palavraSecreta) {
+      setBuscandoPalavra(true);
+      try {
+        const resposta = await api.get("/events");
+        const eventoAtualizado = resposta.data.find(
+          (ev: any) => String(ev.id) === String(evento.id),
+        );
 
-    mostrarAlerta(
-      "Palavra Secreta do Evento",
-      `\nProjete ou informe esta palavra aos alunos para confirmação de presença:\n\n${palavra}`,
-      "sucesso", 
-      undefined,
-      "Fechar",
-    );
+        if (eventoAtualizado && eventoAtualizado.presenceSecret) {
+          setPalavraSecreta(eventoAtualizado.presenceSecret);
+          mostrarAlerta(
+            "Palavra Secreta do Evento",
+            `\nProjete ou informe esta palavra aos alunos para confirmação de presença:\n\n${eventoAtualizado.presenceSecret}`,
+            "sucesso",
+            undefined,
+            "Fechar",
+          );
+        } else {
+          mostrarAlerta(
+            "Sem Palavra Secreta",
+            "Este evento não tem nenhuma palavra definida no servidor.",
+            "aviso",
+          );
+        }
+      } catch (error) {
+        mostrarAlerta(
+          "Erro",
+          "Não foi possível buscar a palavra no servidor",
+          "erro",
+        );
+      } finally {
+        setBuscandoPalavra(false);
+      }
+    } else {
+      mostrarAlerta(
+        "Palavra Secreta do Evento",
+        `\nProjete ou informe esta palavra aos alunos para confirmação de presença:\n\n${palavraSecreta}`,
+        "sucesso",
+        undefined,
+        "Fechar",
+      );
+    }
   };
 
   return (
@@ -171,15 +232,22 @@ const EventDetailScreen = ({ navigation }: Props) => {
               style={styles.actionButton}
               activeOpacity={0.8}
               onPress={handleExibirPalavraSecreta}
+              disabled={buscandoPalavra}
             >
-              <MaterialCommunityIcons
-                name="shield-key-outline"
-                size={20}
-                color={COLORS.branco}
-              />
-              <Text style={styles.actionButtonText}>
-                Exibir Palavra Secreta
-              </Text>
+              {buscandoPalavra ? (
+                <ActivityIndicator color={COLORS.branco} />
+              ) : (
+                <>
+                  <MaterialCommunityIcons
+                    name="shield-key-outline"
+                    size={20}
+                    color={COLORS.branco}
+                  />
+                  <Text style={styles.actionButtonText}>
+                    Exibir Palavra Secreta
+                  </Text>
+                </>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
